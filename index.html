@@ -2530,7 +2530,7 @@ function renderRoundEditors(){
      push that section's editors to the bottom so active rounds stay on top. */
   function sectionComplete(ids){
     return ids.every(id => {
-      const list = matchups[id];
+      const list = matchups[id] || [];
       return list.length > 0 && list.every(m => computeMatchStatus(m, ROUNDS_BY_ID[id]).isFinal);
     });
   }
@@ -2545,7 +2545,7 @@ function renderRoundEditors(){
   });
 
   const html = orderedRounds.map(r=>{
-    const list = matchups[r.id];
+    const list = matchups[r.id] || [];
     const existing = list.length
       ? list.map((m,i)=>`
         <div class="em-row">
