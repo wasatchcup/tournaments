@@ -1608,21 +1608,51 @@ const ADMIN_PASSWORD = '2026';
 const FB_URL = 'https://wasatch-cup-default-rtdb.firebaseio.com/matchups.json';
 
 
+/* Firebase converts sparse arrays to objects — convert them back */
+function fixMatchup(m, round){
+  const nHoles = round ? round.holes.length : 9;
+  const toArr = v => {
+    if(!v) return Array(nHoles).fill(null);
+    if(Array.isArray(v)) return v;
+    const arr = Array(nHoles).fill(null);
+    Object.keys(v).forEach(k=>{ arr[parseInt(k)] = v[k]; });
+    return arr;
+  };
+  if(m.holeScores){
+    m.holeScores.landon = toArr(m.holeScores.landon);
+    m.holeScores.josh   = toArr(m.holeScores.josh);
+    if(m.holeScores.landonPlayers){
+      m.holeScores.landonPlayers = m.holeScores.landonPlayers.map ? 
+        m.holeScores.landonPlayers.map(p=>toArr(p)) : 
+        [toArr(m.holeScores.landonPlayers[0]), toArr(m.holeScores.landonPlayers[1])];
+    }
+    if(m.holeScores.joshPlayers){
+      m.holeScores.joshPlayers = m.holeScores.joshPlayers.map ?
+        m.holeScores.joshPlayers.map(p=>toArr(p)) :
+        [toArr(m.holeScores.joshPlayers[0]), toArr(m.holeScores.joshPlayers[1])];
+    }
+  }
+  return m;
+}
+
 async function loadMatchupsFromStorage(){
   try{
-    console.log('Loading from Firebase...');
     const res = await fetch(FB_URL);
-    console.log('Firebase response status:', res.status);
     if(res.ok){
       const d = await res.json();
-      console.log('Firebase data:', JSON.stringify(d));
       if(d && typeof d === 'object'){
-        // Merge with defaults so missing rounds don't crash the app
-        return {r1:[], r2:[], r3:[], r4:[], ...d};
+        const base = {r1:[], r2:[], r3:[], r4:[]};
+        ROUNDS.forEach(r=>{
+          const raw = d[r.id];
+          if(!raw) return;
+          // Firebase may convert arrays to objects — convert back
+          const arr = Array.isArray(raw) ? raw : Object.values(raw);
+          base[r.id] = arr.filter(Boolean).map(m=>fixMatchup(m, r));
+        });
+        return base;
       }
     }
   } catch(e){ console.error('Firebase read failed', e); }
-  console.log('Returning empty matchups');
   return {r1:[], r2:[], r3:[], r4:[]};
 }
 
@@ -3124,8 +3154,15 @@ function startPolling(){
     try{
       const res = await fetch(FB_URL);
       if(!res.ok) return;
-      const fresh = await res.json();
-      if(!fresh || typeof fresh !== 'object') return;
+      const d = await res.json();
+      if(!d || typeof d !== 'object') return;
+      const fresh = {r1:[], r2:[], r3:[], r4:[]};
+      ROUNDS.forEach(r=>{
+        const raw = d[r.id];
+        if(!raw) return;
+        const arr = Array.isArray(raw) ? raw : Object.values(raw);
+        fresh[r.id] = arr.filter(Boolean).map(m=>fixMatchup(m, r));
+      });
       if(JSON.stringify(fresh) !== JSON.stringify(matchups)){
         matchups = fresh;
         refreshLiveData();
