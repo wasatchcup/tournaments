@@ -1616,7 +1616,10 @@ async function loadMatchupsFromStorage(){
     if(res.ok){
       const d = await res.json();
       console.log('Firebase data:', JSON.stringify(d));
-      if(d && typeof d === 'object') return d;
+      if(d && typeof d === 'object'){
+        // Merge with defaults so missing rounds don't crash the app
+        return {r1:[], r2:[], r3:[], r4:[], ...d};
+      }
     }
   } catch(e){ console.error('Firebase read failed', e); }
   console.log('Returning empty matchups');
