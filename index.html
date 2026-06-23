@@ -2193,6 +2193,7 @@ function renderScoreboard(){
 }
 
 function renderLiveLeaderboard(){
+  const {landon, josh, projLandon, projJosh, active} = computeScores();
   const anyScores = ROUNDS.some(r=>matchups[r.id].some(m=>computeMatchStatus(m,r).holesPlayed>0));
   const anyMatchups = ROUNDS.some(r=>matchups[r.id].length>0);
   const section = document.getElementById('liveLeaderboardSection');
