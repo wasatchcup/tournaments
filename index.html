@@ -2452,7 +2452,8 @@ function holeGridHtml(round){
   <div class="hg-status" id="hgstatus-${round.id}">Not started</div>`;
 }
 function renderRoundEditors(){
-  /* Sections: Davis Park = r1+r2, Valley View = r3+r4.
+  try {
+  alert('renderRoundEditors running. matchups: ' + JSON.stringify(Object.keys(matchups)) + ' r1 length: ' + (matchups.r1||[]).length);
      If ALL matches in a section are complete (every entered matchup is final),
      push that section's editors to the bottom so active rounds stay on top. */
   function sectionComplete(ids){
@@ -2526,6 +2527,9 @@ function renderRoundEditors(){
     wireHoleGrid(r);
     refreshHoleGridStatus(r);
   });
+  } catch(err){
+    document.getElementById('roundEditors').innerHTML = `<div style="color:red;padding:20px;font-family:monospace;font-size:13px;">ERROR in renderRoundEditors:<br>${err.message}<br><br>${err.stack}</div>`;
+  }
 }
 /* Pick the lower of two scores; null if both missing, the other if one is missing */
 function bbMin(a, b){ return (a==null&&b==null)?null : a==null?b : b==null?a : Math.min(a,b); }
