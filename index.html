@@ -1618,19 +1618,19 @@ function fixMatchup(m, round){
     Object.keys(v).forEach(k=>{ arr[parseInt(k)] = v[k]; });
     return arr;
   };
-  if(m.holeScores){
-    m.holeScores.landon = toArr(m.holeScores.landon);
-    m.holeScores.josh   = toArr(m.holeScores.josh);
-    if(m.holeScores.landonPlayers){
-      m.holeScores.landonPlayers = m.holeScores.landonPlayers.map ? 
-        m.holeScores.landonPlayers.map(p=>toArr(p)) : 
-        [toArr(m.holeScores.landonPlayers[0]), toArr(m.holeScores.landonPlayers[1])];
-    }
-    if(m.holeScores.joshPlayers){
-      m.holeScores.joshPlayers = m.holeScores.joshPlayers.map ?
-        m.holeScores.joshPlayers.map(p=>toArr(p)) :
-        [toArr(m.holeScores.joshPlayers[0]), toArr(m.holeScores.joshPlayers[1])];
-    }
+  // Ensure holeScores always exists with default arrays
+  if(!m.holeScores) m.holeScores = {};
+  m.holeScores.landon = toArr(m.holeScores.landon);
+  m.holeScores.josh   = toArr(m.holeScores.josh);
+  if(m.holeScores.landonPlayers){
+    m.holeScores.landonPlayers = m.holeScores.landonPlayers.map ? 
+      m.holeScores.landonPlayers.map(p=>toArr(p)) : 
+      [toArr(m.holeScores.landonPlayers[0]), toArr(m.holeScores.landonPlayers[1])];
+  }
+  if(m.holeScores.joshPlayers){
+    m.holeScores.joshPlayers = m.holeScores.joshPlayers.map ?
+      m.holeScores.joshPlayers.map(p=>toArr(p)) :
+      [toArr(m.holeScores.joshPlayers[0]), toArr(m.holeScores.joshPlayers[1])];
   }
   return m;
 }
