@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1239,7 +1239,7 @@ button{font-family:inherit;cursor:pointer;}
       <div id="liveScoringFeed" class="live-scoring-feed"></div>
     </div>
 
-    <div class="wrap section" id="liveLeaderboardSection" style="padding-bottom:0;display:none!important;">
+    <div class="wrap section" id="liveLeaderboardSection" style="padding-bottom:0;display:none;">
       <div id="liveLeaderboardInner"></div>
     </div>
 
@@ -2226,9 +2226,82 @@ function renderScoreboard(){
 }
 
 function renderLiveLeaderboard(){
+  const {landon, josh, projLandon, projJosh, active} = computeScores();
+  const anyScores = ROUNDS.some(r=>matchups[r.id].some(m=>computeMatchStatus(m,r).holesPlayed>0));
+  const anyMatchups = ROUNDS.some(r=>matchups[r.id].length>0);
   const section = document.getElementById('liveLeaderboardSection');
-  if(section) section.style.display = 'none';
+  if(!anyMatchups){ section.style.display='none'; return; }
+  section.style.display='block';
+
+  const total = TOTAL_POINTS;
+  const toWin = POINTS_TO_WIN;
+  const lPct = total > 0 ? Math.round((projLandon/total)*100) : 50;
+  const jPct = 100 - lPct;
+
+  const lLead = landon > josh, jLead = josh > landon;
+
+  // Build match rows
+  const matchRows = ROUNDS.flatMap(r=>
+    matchups[r.id].map(m=>{
+      const st = computeMatchStatus(m, r);
+      const lName = m.landon.map(id=>(PLAYERS[id]?.name||id).split(' ')[1]||PLAYERS[id]?.name||id).join(' & ');
+      const jName = m.josh.map(id=>(PLAYERS[id]?.name||id).split(' ')[1]||PLAYERS[id]?.name||id).join(' & ');
+      let badgeCls, badgeTxt, dotCls;
+      if(st.isFinal){
+        dotCls='final';
+        if(st.leader==='landon') badgeCls='l final', badgeTxt='W';
+        else if(st.leader==='josh') badgeCls='j final', badgeTxt='L';
+        else badgeCls='final', badgeTxt='½';
+      } else if(st.holesPlayed>0){
+        dotCls='live';
+        if(st.diff===0) badgeCls='as', badgeTxt='AS · '+st.holesPlayed;
+        else if(st.leader==='landon') badgeCls='l', badgeTxt=st.diff+' UP · '+st.holesPlayed;
+        else badgeCls='j', badgeTxt=st.diff+' UP · '+st.holesPlayed;
+      } else {
+        dotCls='upcoming';
+        badgeCls='upcoming';
+        badgeTxt=r.format.split(' ')[0];
+      }
+      return `<div class="live-lb-match">
+        <span class="live-lb-mname"><span class="live-lb-mdot ${dotCls}"></span>${escapeHtml(lName)}</span>
+        <span class="live-lb-mbadge ${badgeCls}">${badgeTxt}</span>
+        <span class="live-lb-mname right">${escapeHtml(jName)}</span>
+      </div>`;
+    })
+  ).join('');
+
+  const isLive = active > 0 && anyScores;
+  const displayL = anyScores ? fmtNum(projLandon) : fmtNum(landon);
+  const displayJ = anyScores ? fmtNum(projJosh) : fmtNum(josh);
+
+  document.getElementById('liveLeaderboardInner').innerHTML = `
+  <div class="live-lb-card">
+    <div class="live-lb-header">
+      <span class="live-lb-eyebrow">Team Leaderboard</span>
+      ${isLive ? `<span class="live-lb-pulse-wrap"><span class="live-lb-pulse"></span>Live</span>` : `<span class="live-lb-eyebrow">2026 Cup</span>`}
+    </div>
+    <div class="live-lb-scores">
+      <div class="live-lb-team">
+        <span class="live-lb-tname landon">Team Landon</span>
+        <span class="live-lb-pts landon${lLead?' lead':''}">${displayL}</span>
+      </div>
+      <div class="live-lb-divider">
+        <span class="live-lb-vs">vs</span>
+      </div>
+      <div class="live-lb-team right">
+        <span class="live-lb-tname josh">Team Josh</span>
+        <span class="live-lb-pts josh${jLead?' lead':''}">${displayJ}</span>
+      </div>
+    </div>
+    <div class="live-lb-bar-track">
+      <div class="live-lb-bar-l" style="width:${lPct}%"></div>
+      <div class="live-lb-bar-j" style="width:${jPct}%"></div>
+    </div>
+    <div class="live-lb-matches">${matchRows}</div>
+    <div class="live-lb-footer">First to ${fmtNum(toWin)} points wins &middot; ${total} total points</div>
+  </div>`;
 }
+
 
 /* Match play probability: given margin (positive = leading) and holesLeft,
    returns probability [0,1] that the leading side wins or halves. Uses the
@@ -2452,8 +2525,7 @@ function holeGridHtml(round){
   <div class="hg-status" id="hgstatus-${round.id}">Not started</div>`;
 }
 function renderRoundEditors(){
-  try {
-  alert('renderRoundEditors running. matchups: ' + JSON.stringify(Object.keys(matchups)) + ' r1 length: ' + (matchups.r1||[]).length);
+  /* Sections: Davis Park = r1+r2, Valley View = r3+r4.
      If ALL matches in a section are complete (every entered matchup is final),
      push that section's editors to the bottom so active rounds stay on top. */
   function sectionComplete(ids){
@@ -2527,9 +2599,6 @@ function renderRoundEditors(){
     wireHoleGrid(r);
     refreshHoleGridStatus(r);
   });
-  } catch(err){
-    document.getElementById('roundEditors').innerHTML = `<div style="color:red;padding:20px;font-family:monospace;font-size:13px;">ERROR in renderRoundEditors:<br>${err.message}<br><br>${err.stack}</div>`;
-  }
 }
 /* Pick the lower of two scores; null if both missing, the other if one is missing */
 function bbMin(a, b){ return (a==null&&b==null)?null : a==null?b : b==null?a : Math.min(a,b); }
@@ -2753,7 +2822,6 @@ function attemptLogin(){
     document.getElementById('adminPanel').style.display = 'block';
     document.getElementById('loginError').style.display = 'none';
     renderRoundEditors();
-  } else {
     document.getElementById('loginError').style.display = 'block';
   }
 }
