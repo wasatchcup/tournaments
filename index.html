@@ -556,11 +556,15 @@ button{font-family:inherit;cursor:pointer;}
 .hcp-row{color:var(--muted) !important;font-size:10px !important;opacity:0.7;}
 .ls-margin-head{background:var(--ink-2);}
 /* Best Ball scorecard styles */
-.bb-table .bb-player{font-size:11px;opacity:0.85;}
-.bb-table .bb-label{font-size:10px;text-transform:uppercase;letter-spacing:0.07em;opacity:0.4;}
+.bb-table .bb-player{font-size:10px;text-transform:uppercase;letter-spacing:0.07em;font-weight:600;opacity:1;}
+.bb-table td.bb-ind{opacity:0.38;}
+.bb-table td.bb-ind.bb-used{opacity:1;font-weight:700;}
+.bb-table .bb-label{font-size:10px;text-transform:uppercase;letter-spacing:0.07em;font-weight:600;}
+.bb-table .bb-label.l{color:var(--landon);}
+.bb-table .bb-label.j{color:var(--josh);}
 .ls-stroke-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--gold);margin-left:3px;vertical-align:middle;opacity:0.85;position:relative;top:-1px;}
-.bb-table td.bb-used{font-weight:700;opacity:1;}
-.bb-table td.bb-best{font-weight:700;opacity:0.4;}
+.bb-table td.bb-best{font-weight:800;background:rgba(255,255,255,0.07);color:var(--parchment);}
+.bb-table tr.bb-best-row th{font-weight:800;}
 .bb-table tr.bb-divider td,.bb-table tr.bb-divider th{border-top:2px solid var(--hairline);}
 /* Best Ball admin grid styles */
 .hg-bb-row{font-size:11px;opacity:0.6;font-style:italic;}
@@ -2006,28 +2010,28 @@ function scorecardTableHtml(m, round){
       const used = v!=null && v===best && (other==null||v<=other);
       const diff = Math.round(lAllow[0] - minJAllow);
       const dot = diff > 0 && h.hcp <= Math.min(diff,18) ? `<span class="ls-stroke-dot"></span>` : '';
-      return `<td${used?' class="bb-used"':''}>${v==null?'&ndash;':v}${dot}</td>`;
+      return `<td class="bb-ind${used?' bb-used':''}">${v==null?'&ndash;':v}${dot}</td>`;
     }).join('');
     const lp1cells = round.holes.map((h,i)=>{
       const v=lp[1][i], other=lp[0][i], best=lBest[i];
       const used = v!=null && v===best && (other==null||v<=other);
       const diff = Math.round(lAllow[1] - minJAllow);
       const dot = diff > 0 && h.hcp <= Math.min(diff,18) ? `<span class="ls-stroke-dot"></span>` : '';
-      return `<td${used?' class="bb-used"':''}>${v==null?'&ndash;':v}${dot}</td>`;
+      return `<td class="bb-ind${used?' bb-used':''}">${v==null?'&ndash;':v}${dot}</td>`;
     }).join('');
     const jp0cells = round.holes.map((h,i)=>{
       const v=jp[0][i], other=jp[1][i], best=jBest[i];
       const used = v!=null && v===best && (other==null||v<=other);
       const diff = Math.round(jAllow[0] - minLAllow);
       const dot = diff > 0 && h.hcp <= Math.min(diff,18) ? `<span class="ls-stroke-dot"></span>` : '';
-      return `<td${used?' class="bb-used"':''}>${v==null?'&ndash;':v}${dot}</td>`;
+      return `<td class="bb-ind${used?' bb-used':''}">${v==null?'&ndash;':v}${dot}</td>`;
     }).join('');
     const jp1cells = round.holes.map((h,i)=>{
       const v=jp[1][i], other=jp[0][i], best=jBest[i];
       const used = v!=null && v===best && (other==null||v<=other);
       const diff = Math.round(jAllow[1] - minLAllow);
       const dot = diff > 0 && h.hcp <= Math.min(diff,18) ? `<span class="ls-stroke-dot"></span>` : '';
-      return `<td${used?' class="bb-used"':''}>${v==null?'&ndash;':v}${dot}</td>`;
+      return `<td class="bb-ind${used?' bb-used':''}">${v==null?'&ndash;':v}${dot}</td>`;
     }).join('');
     const lBestCells = round.holes.map((h,i)=>{
       const v=lBest[i], ov=jBest[i];
@@ -2051,10 +2055,10 @@ function scorecardTableHtml(m, round){
         <tbody>
           <tr><th class="ls-rowlabel l bb-player">${escapeHtml(lNames[0]||'Landon P1')}</th>${lp0cells}</tr>
           <tr><th class="ls-rowlabel l bb-player">${escapeHtml(lNames[1]||'Landon P2')}</th>${lp1cells}<td class="ls-margin-cell" rowspan="4">${marginBadgeHtml(m,round)}</td></tr>
-          <tr><th class="ls-rowlabel l bb-label">Best Ball</th>${lBestCells}</tr>
+          <tr class="bb-best-row bb-divider"><th class="ls-rowlabel l bb-label l">Best Ball</th>${lBestCells}</tr>
           <tr class="bb-divider"><th class="ls-rowlabel j bb-player">${escapeHtml(jNames[0]||'Josh P1')}</th>${jp0cells}</tr>
           <tr><th class="ls-rowlabel j bb-player">${escapeHtml(jNames[1]||'Josh P2')}</th>${jp1cells}</tr>
-          <tr><th class="ls-rowlabel j bb-label">Best Ball</th>${jBestCells}</tr>
+          <tr class="bb-best-row bb-divider"><th class="ls-rowlabel j bb-label j">Best Ball</th>${jBestCells}</tr>
         </tbody>
       </table>
     </div>`;
