@@ -3003,7 +3003,7 @@ function renderQsRoundPicker(){
   document.querySelectorAll('.qs-round-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       qsSelectedRound = btn.dataset.round;
-      renderQsRoundPicker();
+      renderQsMatchPicker();
     });
   });
 }
