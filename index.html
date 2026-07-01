@@ -496,8 +496,7 @@ button{font-family:inherit;cursor:pointer;}
 }
 .ls-table-wrap{overflow-x:auto;}
 .ls-table{border-collapse:collapse;width:100%;min-width:510px;}
-.ls-table th, .ls-table td{
-  border:1px solid var(--hairline-soft);padding:7px 4px;text-align:center;
+.ls-table th, .ls-table td{  border:1px solid var(--hairline-soft);padding:7px 4px;text-align:center;
   font-size:11px;font-family:'JetBrains Mono',monospace;
 }
 .ls-table thead tr:first-child th{color:var(--muted);}
@@ -505,7 +504,13 @@ button{font-family:inherit;cursor:pointer;}
 .ls-rowlabel{text-align:left;padding-left:10px;white-space:nowrap;font-weight:700;font-size:12px;}
 .ls-rowlabel.l{color:var(--landon);}
 .ls-rowlabel.j{color:var(--josh);}
-@media (max-width:480px){.ls-rowlabel{font-size:11px;padding-left:6px;max-width:80px;overflow:hidden;text-overflow:ellipsis;}}
+.ls-names-short{display:none;}
+.ls-names-full{display:inline;}
+@media (max-width:600px){
+  .ls-names-full{display:none;}
+  .ls-names-short{display:inline;}
+  .ls-rowlabel{max-width:100px;overflow:hidden;text-overflow:ellipsis;}
+}
 .ls-player-label{display:flex;align-items:center;gap:7px;min-width:0;}
 .ls-avatars{display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
 .ls-avatar{
@@ -1969,9 +1974,15 @@ function resultLabel(m, round){
 function namesFor(ids){
   return ids.map(id=>PLAYERS[id].name).join(' & ');
 }
+function shortNamesFor(ids){
+  return ids.map(id=>{
+    const parts = PLAYERS[id].name.split(' ');
+    return parts[parts.length-1]; // last name only
+  }).join(' & ');
+}
 function playerRowLabelHtml(ids){
   const avatars = ids.map(id=>`<img src="${PLAYERS[id].photo}" alt="" class="ls-avatar">`).join('');
-  return `<span class="ls-player-label"><span class="ls-avatars">${avatars}</span><span class="ls-names-text">${escapeHtml(namesFor(ids))}</span></span>`;
+  return `<span class="ls-player-label"><span class="ls-avatars">${avatars}</span><span class="ls-names-text ls-names-full">${escapeHtml(namesFor(ids))}</span><span class="ls-names-text ls-names-short">${escapeHtml(shortNamesFor(ids))}</span></span>`;
 }
 function teamAllowanceForPair(ids, format){
   const hdcps = ids.map(id=>PLAYERS[id]?.hdcp??0);
