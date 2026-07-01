@@ -407,6 +407,26 @@ button{font-family:inherit;cursor:pointer;}
 .live-lb-mdot.final{background:var(--muted);opacity:0.4;}
 .live-lb-mdot.upcoming{background:var(--hairline);}
 .live-lb-footer{margin-top:10px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
+.mu-round-block{margin-bottom:28px;}
+.mu-round-header{margin-bottom:14px;}
+.mu-round-tag{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.09em;color:var(--gold);margin-bottom:4px;}
+.mu-round-title{font-family:'Anton',sans-serif;font-size:20px;text-transform:uppercase;letter-spacing:0.03em;color:var(--parchment);}
+.mu-round-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.mu-card{background:var(--ink-1);border:1px solid var(--hairline);border-radius:var(--radius);padding:16px;margin-bottom:10px;}
+.mu-match-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:12px;}
+.mu-vs-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;}
+.mu-side{display:flex;flex-direction:row;align-items:flex-start;justify-content:center;gap:10px;}
+.mu-player{display:flex;flex-direction:column;align-items:center;gap:5px;}
+.mu-avatar{width:58px;height:58px;border-radius:10px;object-fit:cover;border:2.5px solid var(--hairline);}
+.mu-avatar.l{border-color:var(--landon);}
+.mu-avatar.j{border-color:var(--josh);}
+.mu-name{font-size:10px;font-weight:700;text-align:center;line-height:1.2;display:block;}
+.mu-name.l{color:var(--landon);}
+.mu-name.j{color:var(--josh);}
+.mu-hdcp{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);display:block;text-align:center;}
+.mu-vs-col{display:flex;align-items:center;justify-content:center;padding:0 4px;}
+.mu-vs-text{font-family:'Anton',sans-serif;font-size:36px;color:var(--parchment);letter-spacing:0.04em;line-height:1;}
+.mu-empty{color:var(--muted);font-size:13px;padding:20px 0;text-align:center;font-style:italic;}
 .battlefield{padding-top:0;}
 .round-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;}
 @media (max-width:760px){.round-grid{grid-template-columns:minmax(0,1fr);}}
@@ -1170,6 +1190,7 @@ button{font-family:inherit;cursor:pointer;}
     </button>
     <nav class="navlinks" id="navlinks">
       <button type="button" data-nav="live">Live <span class="nav-live-dot" id="navLiveDot" style="display:none;"></span></button>
+      <button type="button" data-nav="matchups">Matchups</button>
       <button type="button" data-nav="history">History</button>
       <button type="button" data-nav="bios">Teams</button>
       <button type="button" data-nav="format">Format</button>
@@ -1292,6 +1313,15 @@ button{font-family:inherit;cursor:pointer;}
 
 
   <!-- ===================== HISTORY ===================== -->
+  <section class="page" id="matchups" data-page="matchups">
+    <div class="wrap section">
+      <div class="eyebrow">2026 Wasatch Cup</div>
+      <h2 class="section-title" style="font-family:'Anton',sans-serif;font-size:clamp(28px,8vw,52px);text-transform:uppercase;letter-spacing:0.03em;">Today's Matchups</h2>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:28px;">August 29, 2026 · Davis Park &amp; Valley View</p>
+      <div id="matchupsBody"></div>
+    </div>
+  </section>
+
   <section class="page" id="history" data-page="history">
 
     <div class="history-hero">
@@ -2267,6 +2297,46 @@ function renderLiveLeaderboard(){
 /* Match play probability: given margin (positive = leading) and holesLeft,
    returns probability [0,1] that the leading side wins or halves. Uses the
    standard match-play model: P = 1 - sum of ties that would lose. */
+function renderMatchups(){
+  const el = document.getElementById('matchupsBody');
+  if(!el) return;
+  const fmtHdcp = h => h == null ? '?' : h < 0 ? '+' + Math.abs(h) : String(h);
+  const roundHtml = ROUNDS.map(r => {
+    const list = matchups[r.id] || [];
+    if(!list.length) return `
+      <div class="mu-round-block">
+        <div class="mu-round-header">
+          <div class="mu-round-tag">${escapeHtml(r.format)} · ${escapeHtml(r.nine)}</div>
+          <div class="mu-round-title">${escapeHtml(r.course)}</div>
+        </div>
+        <div class="mu-empty">Matchups not yet announced</div>
+      </div>`;
+    const cardsHtml = list.map((m, i) => {
+      const mkSide = (ids, teamKey) => {
+        const players = ids.map(id => {
+          const p = PLAYERS[id];
+          const img = HEADSHOT_DATA[id]
+            ? `<img class="mu-avatar ${teamKey}" src="${HEADSHOT_DATA[id]}" alt="${escapeHtml(p?.name||id)}">`
+            : `<div class="mu-avatar ${teamKey}" style="background:var(--ink-2);display:flex;align-items:center;justify-content:center;font-size:20px;">⛳</div>`;
+          const [first, ...rest] = (p?.name||id).split(' ');
+          return `<div class="mu-player">${img}<span class="mu-name ${teamKey}">${escapeHtml(first)}<br>${escapeHtml(rest.join(' '))}</span><span class="mu-hdcp">(${fmtHdcp(p?.hdcp)})</span></div>`;
+        }).join('');
+        return `<div class="mu-side">${players}</div>`;
+      };
+      return `<div class="mu-card">
+        <div class="mu-match-label">Match ${i+1}</div>
+        <div class="mu-vs-row">
+          ${mkSide(m.landon,'l')}
+          <div class="mu-vs-col"><span class="mu-vs-text">VS</span></div>
+          ${mkSide(m.josh,'j')}
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="mu-round-block"><div class="mu-round-header"><div class="mu-round-tag">${escapeHtml(r.format)} · ${escapeHtml(r.nine)}</div><div class="mu-round-title">${escapeHtml(r.course)}</div><div class="mu-round-sub">${list.length} matchup${list.length!==1?'s':''}</div></div>${cardsHtml}</div>`;
+  }).join('');
+  el.innerHTML = roundHtml;
+}
+
 function matchWinProb(diff, holesLeft){
   if(holesLeft <= 0) return diff > 0 ? 1 : diff < 0 ? 0 : 0.5;
   if(diff > holesLeft) return 1;   // dormie+ → clinched
@@ -2742,10 +2812,11 @@ function refreshLiveData(){
   renderLiveLeaderboard();
   renderLeaderboard();
   renderTeams();
+  renderMatchups();
 }
 
 /* ========================= NAV ========================= */
-const PAGES = ['live','history','teams','bios','format','admin'];
+const PAGES = ['live','matchups','history','teams','bios','format','admin'];
 function revealActivePage(pageEl){
   pageEl.querySelectorAll('.reveal').forEach((el,i)=>{
     setTimeout(()=>el.classList.add('in'), 60*i);
@@ -3103,6 +3174,7 @@ async function initApp(){
   renderTeams();
   renderBios();
   renderFormats();
+  renderMatchups();
   renderBattlefield();
   renderScoreboard();
   renderLiveScoring();
