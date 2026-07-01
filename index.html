@@ -1051,6 +1051,14 @@ button{font-family:inherit;cursor:pointer;}
 }
 .qs-auth input:focus{outline:none;border-color:var(--gold);}
 .qs-err{color:var(--red);font-size:12.5px;font-family:'JetBrains Mono',monospace;display:none;}
+.qs-round-list{display:flex;flex-direction:column;gap:10px;}
+.qs-round-btn{background:var(--ink-2);border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:16px;text-align:left;cursor:pointer;transition:border-color .15s;}
+.qs-round-btn:hover{border-color:var(--gold);}
+.qrb-format{font-family:'Anton',sans-serif;font-size:18px;text-transform:uppercase;letter-spacing:0.03em;color:var(--parchment);margin-bottom:3px;}
+.qrb-meta{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--gold);margin-bottom:6px;}
+.qrb-count{font-size:12px;color:var(--muted);}
+.qs-back-btn{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:0 0 12px;display:block;}
+.qs-back-btn:hover{color:var(--parchment);}
 .qs-match-list{display:flex;flex-direction:column;gap:10px;}
 .qs-match-btn{
   background:var(--ink-2);border:1px solid var(--hairline-soft);border-radius:10px;
@@ -2319,7 +2327,7 @@ function renderMatchups(){
             ? `<img class="mu-avatar ${teamKey}" src="${HEADSHOT_DATA[id]}" alt="${escapeHtml(p?.name||id)}">`
             : `<div class="mu-avatar ${teamKey}" style="background:var(--ink-2);display:flex;align-items:center;justify-content:center;font-size:20px;">⛳</div>`;
           const [first, ...rest] = (p?.name||id).split(' ');
-          return `<div class="mu-player">${img}<span class="mu-name ${teamKey}">${escapeHtml(first)}<br>${escapeHtml(rest.join(' '))}</span><span class="mu-hdcp">(${fmtHdcp(p?.hdcp)})</span></div>`;
+          return `<div class="mu-player">${img}<span class="mu-name ${teamKey}">${escapeHtml(first)}<br>${escapeHtml(rest.join(' '))}</span></div>`;
         }).join('');
         return `<div class="mu-side">${players}</div>`;
       };
@@ -2928,7 +2936,7 @@ let qsSelectedIndex = null;
 function openQs(){
   document.getElementById('qsOverlay').style.display = 'flex';
   document.body.style.overflow = 'hidden';
-  if(qsAuthed){ renderQsMatchPicker(); }
+  if(qsAuthed){ renderQsRoundPicker(); }
   else { renderQsAuth(); }
 }
 function closeQs(){
@@ -2958,7 +2966,7 @@ function renderQsAuth(){
     if(inp.value === ADMIN_PASSWORD){
       qsAuthed = true;
       document.getElementById('qsErr').style.display = 'none';
-      renderQsMatchPicker();
+      renderQsRoundPicker();
     } else {
       document.getElementById('qsErr').style.display = 'block';
       inp.select();
@@ -2968,16 +2976,12 @@ function renderQsAuth(){
   inp.addEventListener('keydown', e=>{ if(e.key==='Enter') attempt(); });
 }
 
-function renderQsMatchPicker(){
-  document.getElementById('qsTitle').textContent = '⛳ Choose Match';
-  const active = [];
-  ROUNDS.forEach(r=>{
-    matchups[r.id].forEach((m,i)=>{
-      const st = computeMatchStatus(m, r);
-      if(!st.isFinal) active.push({m, r, i, st});
-    });
-  });
-  if(active.length === 0){
+function renderQsRoundPicker(){
+  document.getElementById('qsTitle').textContent = '⛳ Choose Round';
+  const roundsWithMatches = ROUNDS.filter(r =>
+    matchups[r.id].some(m => !computeMatchStatus(m, r).isFinal)
+  );
+  if(roundsWithMatches.length === 0){
     document.getElementById('qsBody').innerHTML = `
       <div class="qs-no-matches">
         No active matches right now.<br>
@@ -2985,19 +2989,45 @@ function renderQsMatchPicker(){
       </div>`;
     return;
   }
-  active.sort((a,b)=> b.st.holesPlayed - a.st.holesPlayed);
-  document.getElementById('qsBody').innerHTML = `<div class="qs-match-list">${active.map(({m,r,i,st})=>{
-    const fmtH = h => h==null?'?': h<0?'+'+Math.abs(h):h;
-    const lHdcp = m.landon.map(id=>fmtH(PLAYERS[id]?.hdcp)).join('/');
-    const jHdcp = m.josh.map(id=>fmtH(PLAYERS[id]?.hdcp)).join('/');
-    return `
-    <button class="qs-match-btn" data-round="${r.id}" data-index="${i}">
-      <div class="qmb-round">${escapeHtml(r.format)} &middot; ${escapeHtml(r.nine)} &middot; ${escapeHtml(r.course)}</div>
-      <div class="qmb-names"><span class="l">${escapeHtml(namesFor(m.landon))}</span> <span style="color:var(--muted);font-weight:400;">vs</span> <span class="j">${escapeHtml(namesFor(m.josh))}</span></div>
-      <div class="qmb-status">${st.holesPlayed === 0 ? 'Not started' : st.label + ' · thru ' + st.holesPlayed} <span style="color:var(--muted);font-size:10px;">· hdcp <span style="color:var(--landon)">${lHdcp}</span> / <span style="color:var(--josh)">${jHdcp}</span></span></div>
-    </button>`;}).join('')}</div>`;
-  document.querySelectorAll('.qs-match-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
+  document.getElementById('qsBody').innerHTML = `
+    <div class="qs-round-list">
+      ${roundsWithMatches.map(r => {
+        const count = matchups[r.id].filter(m => !computeMatchStatus(m, r).isFinal).length;
+        return `<button class="qs-round-btn" data-round="${r.id}">
+          <div class="qrb-format">${escapeHtml(r.format)}</div>
+          <div class="qrb-meta">${escapeHtml(r.nine)} · ${escapeHtml(r.course)}</div>
+          <div class="qrb-count">${count} match${count !== 1 ? 'es' : ''} in progress</div>
+        </button>`;
+      }).join('')}
+    </div>`;
+  document.querySelectorAll('.qs-round-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      qsSelectedRound = btn.dataset.round;
+      renderQsRoundPicker();
+    });
+  });
+}
+
+function renderQsMatchPicker(){
+  document.getElementById('qsTitle').textContent = '⛳ Choose Match';
+  const r = ROUNDS_BY_ID[qsSelectedRound];
+  const active = [];
+  matchups[r.id].forEach((m, i) => {
+    const st = computeMatchStatus(m, r);
+    if(!st.isFinal) active.push({m, r, i, st});
+  });
+  active.sort((a,b) => b.st.holesPlayed - a.st.holesPlayed);
+  document.getElementById('qsBody').innerHTML = `
+    <button class="qs-back-btn" id="qsRoundBack">← ${escapeHtml(r.format)}</button>
+    <div class="qs-match-list">${active.map(({m, r, i, st}) => {
+      return `<button class="qs-match-btn" data-round="${r.id}" data-index="${i}">
+        <div class="qmb-names"><span class="l">${escapeHtml(namesFor(m.landon))}</span> <span style="color:var(--muted);font-weight:400;">vs</span> <span class="j">${escapeHtml(namesFor(m.josh))}</span></div>
+        <div class="qmb-status">${st.holesPlayed === 0 ? 'Not started' : st.label + ' · thru ' + st.holesPlayed}</div>
+      </button>`;
+    }).join('')}</div>`;
+  document.getElementById('qsRoundBack').addEventListener('click', renderQsRoundPicker);
+  document.querySelectorAll('.qs-match-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
       qsSelectedRound = btn.dataset.round;
       qsSelectedIndex = parseInt(btn.dataset.index, 10);
       renderQsScoreEntry();
@@ -3050,7 +3080,7 @@ function pairHdcp(ids){ return ids.map(id=>PLAYERS[id]?.hdcp??0); }
 function renderQsScoreEntry(){
   const r = ROUNDS_BY_ID[qsSelectedRound];
   const m = matchups[qsSelectedRound][qsSelectedIndex];
-  if(!m){ renderQsMatchPicker(); return; }
+  if(!m){ renderQsRoundPicker(); return; }
   const st = computeMatchStatus(m, r);
   const isBB = r.format === 'Best Ball';
   document.getElementById('qsTitle').textContent = '⛳ Enter Scores';
