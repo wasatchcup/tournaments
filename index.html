@@ -508,6 +508,23 @@ button{font-family:inherit;cursor:pointer;}
 .bf-badge.live{background:rgba(111,167,126,0.15);color:var(--green);border:1px solid rgba(111,167,126,0.3);}
 .bf-badge.final{background:var(--ink-2);color:var(--muted);border:1px solid var(--hairline);}
 .bf-badge.tbd{background:var(--ink-2);color:var(--muted);border:1px solid var(--hairline);}
+.bf-card-inner{display:flex;flex-direction:column;gap:10px;width:100%;}
+.bf-top-row{display:flex;align-items:center;gap:8px;}
+.bf-format-tag{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;}
+.bf-players{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;}
+.bf-side{display:flex;align-items:center;gap:6px;}
+.bf-side.right{justify-content:flex-end;}
+.bf-pname{font-size:13px;font-weight:600;line-height:1.2;}
+.bf-pname.l{color:var(--landon);}
+.bf-pname.j{color:var(--josh);}
+.bf-winning .bf-pname{opacity:1;}
+.bf-side:not(.bf-winning) .bf-pname{opacity:0.55;}
+.bf-lead-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.bf-mid{text-align:center;}
+.bf-center-status{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;text-align:center;white-space:nowrap;}
+.bf-center-status.muted{color:var(--muted);font-weight:400;}
+.bf-as{font-size:18px;color:var(--parchment);}
+.bf-thru{font-size:10px;color:var(--muted);font-weight:400;}
 .completed-match{
   background:var(--ink-2);border:1px solid var(--hairline-soft);border-radius:var(--radius-sm);
   overflow:hidden;
@@ -2116,36 +2133,49 @@ function battlefieldMatchHtml(m, round){
   const lName = escapeHtml(namesFor(m.landon));
   const jName = escapeHtml(namesFor(m.josh));
 
-  // Summary line: who leads, by how much, thru how many
-  let summaryText = '';
-  if(st.holesPlayed === 0){
-    summaryText = `<span class="cm-result" style="color:var(--muted)">Not started</span>`;
-  } else if(st.isFinal){
-    summaryText = `<span class="cm-result">${resultLabel(m, round)}</span>`;
-  } else {
-    const leader = st.leader==='landon' ? `<span style="color:var(--landon)">${lName}</span>`
-      : st.leader==='josh' ? `<span style="color:var(--josh)">${jName}</span>`
-      : '<span>All Square</span>';
-    const margin = st.leader !== 'allsquare' ? `<span class="cm-result">${Math.abs(st.diff)} UP · thru ${st.holesPlayed}</span>` : `<span class="cm-result">AS · thru ${st.holesPlayed}</span>`;
-    summaryText = `${leader} ${margin}`;
-  }
-
+  // Status badge
   const statusBadge = st.isFinal
     ? `<span class="bf-badge final">Final</span>`
     : st.holesPlayed > 0
-    ? `<span class="bf-badge live">In Progress</span>`
-    : `<span class="bf-badge tbd">Not Started</span>`;
+    ? `<span class="bf-badge live">Live</span>`
+    : `<span class="bf-badge tbd">Up Next</span>`;
+
+  // Big center status
+  let centerHtml = '';
+  if(st.holesPlayed === 0){
+    centerHtml = `<div class="bf-center-status muted">Not started</div>`;
+  } else if(st.isFinal){
+    const res = resultLabel(m, round);
+    centerHtml = `<div class="bf-center-status">${res}</div>`;
+  } else if(st.leader === 'allsquare'){
+    centerHtml = `<div class="bf-center-status"><span class="bf-as">AS</span> <span class="bf-thru">· thru ${st.holesPlayed}</span></div>`;
+  } else {
+    const leadColor = st.leader === 'landon' ? 'var(--landon)' : 'var(--josh)';
+    centerHtml = `<div class="bf-center-status"><span style="color:${leadColor};font-size:22px;font-weight:700;">${Math.abs(st.diff)} UP</span> <span class="bf-thru">· thru ${st.holesPlayed}</span></div>`;
+  }
+
+  // Which side is leading
+  const lLead = st.leader === 'landon';
+  const jLead = st.leader === 'josh';
+  const as = st.leader === 'allsquare' || st.holesPlayed === 0;
 
   return `
   <details class="completed-match">
     <summary>
-      <span class="cm-matchup">
-        <span class="cm-side-name l">${lName}</span>
-        <span class="cm-vs">vs</span>
-        <span class="cm-side-name j">${jName}</span>
-      </span>
-      ${statusBadge}
-      ${summaryText}
+      <div class="bf-card-inner">
+        <div class="bf-top-row">${statusBadge}<span class="bf-format-tag">${round.format}</span></div>
+        <div class="bf-players">
+          <div class="bf-side ${lLead?'bf-winning':''}">
+            <span class="bf-pname l">${lName}</span>
+            ${lLead ? `<span class="bf-lead-dot" style="background:var(--landon)"></span>` : ''}
+          </div>
+          <div class="bf-mid">${centerHtml}</div>
+          <div class="bf-side right ${jLead?'bf-winning':''}">
+            ${jLead ? `<span class="bf-lead-dot" style="background:var(--josh)"></span>` : ''}
+            <span class="bf-pname j">${jName}</span>
+          </div>
+        </div>
+      </div>
     </summary>
     <div class="cm-body">${scorecardTableHtml(m, round)}</div>
   </details>`;
