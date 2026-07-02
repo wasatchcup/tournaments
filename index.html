@@ -1484,6 +1484,13 @@ button{font-family:inherit;cursor:pointer;}
 
       <div id="roundEditors"></div>
 
+      <div style="margin-top:32px;border-top:1px solid var(--hairline);padding-top:24px;">
+        <div class="eyebrow" style="margin-bottom:6px;">Handicap Indexes</div>
+        <h3 style="font-family:'Anton',sans-serif;font-size:20px;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:16px;">Edit Handicaps</h3>
+        <div id="hdcpEditorGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;"></div>
+        <button class="btn btn-gold" id="saveHdcpBtn">Save Handicaps</button>
+        <p id="hdcpSaveMsg" style="display:none;font-size:12px;color:#1D9E75;margin-top:8px;">✓ Handicaps saved!</p>
+      </div>
 
       <div class="admin-foot-actions">
         <button class="btn btn-gold" id="publishBtn">⬇ Publish &amp; Share</button>
@@ -2873,6 +2880,7 @@ function attemptLogin(){
     document.getElementById('adminPanel').style.display = 'block';
     document.getElementById('loginError').style.display = 'none';
     renderRoundEditors();
+    renderHdcpEditor();
     document.getElementById('loginError').style.display = 'block';
   }
 }
@@ -2907,6 +2915,36 @@ document.getElementById('publishBtn').addEventListener('click', async ()=>{
   a.download = 'wasatch-cup-' + stamp + '.html';
   a.click();
   URL.revokeObjectURL(url);
+});
+
+function renderHdcpEditor(){
+  const el = document.getElementById('hdcpEditorGrid');
+  if(!el) return;
+  const fmtH = h => h == null ? '' : h < 0 ? '+' + Math.abs(h) : String(h);
+  el.innerHTML = Object.entries(PLAYERS).map(([id, p]) => {
+    const display = fmtH(p.hdcp);
+    return `<div style="display:flex;align-items:center;gap:8px;background:var(--ink-1);border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:8px 10px;">
+      <span style="flex:1;font-size:12px;font-weight:600;color:${p.team==='landon'?'var(--landon)':'var(--josh)'};">${escapeHtml(p.name)}</span>
+      <input type="text" id="hdcp-${id}" value="${escapeHtml(display)}" placeholder="e.g. 5.1 or +3.7"
+        style="width:70px;background:var(--ink-2);border:1px solid var(--hairline);border-radius:4px;color:var(--parchment);font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 6px;text-align:center;">
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('saveHdcpBtn').addEventListener('click', async () => {
+  Object.keys(PLAYERS).forEach(id => {
+    const input = document.getElementById('hdcp-' + id);
+    if(!input) return;
+    const raw = input.value.trim();
+    if(raw === '') { PLAYERS[id].hdcp = null; return; }
+    const isPlus = raw.startsWith('+');
+    const num = parseFloat(raw.replace('+', ''));
+    if(!isNaN(num)) PLAYERS[id].hdcp = isPlus ? -num : num;
+  });
+  const msg = document.getElementById('hdcpSaveMsg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 3000);
+  renderRoundEditors();
 });
 
 document.getElementById('resetBtn').addEventListener('click', async ()=>{
