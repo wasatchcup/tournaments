@@ -427,6 +427,20 @@ button{font-family:inherit;cursor:pointer;}
 .mu-vs-col{display:flex;align-items:center;justify-content:center;padding:0 4px;}
 .mu-vs-text{font-family:'Anton',sans-serif;font-size:36px;color:var(--parchment);letter-spacing:0.04em;line-height:1;}
 .mu-empty{color:var(--muted);font-size:13px;padding:20px 0;text-align:center;font-style:italic;}
+.mp-table .mp-status-head{font-size:9px;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+.mp-status-cell{text-align:center;padding:4px 2px;vertical-align:middle;}
+.mp-status-cell.mp-l-won{background:rgba(143,168,137,0.12);}
+.mp-status-cell.mp-j-won{background:rgba(168,149,124,0.12);}
+.mp-status-cell.mp-halved{background:rgba(255,255,255,0.04);}
+.mp-status-cell.mp-unknown{opacity:0.3;}
+.mp-hole-result{display:block;font-size:11px;font-weight:700;line-height:1;}
+.mp-status-cell.mp-l-won .mp-hole-result{color:var(--landon);}
+.mp-status-cell.mp-j-won .mp-hole-result{color:var(--josh);}
+.mp-status-cell.mp-halved .mp-hole-result{color:var(--muted);}
+.mp-running{display:block;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;margin-top:1px;}
+.mp-run-l{color:var(--landon);}
+.mp-run-j{color:var(--josh);}
+.mp-run-as{color:var(--muted);}
 .battlefield{padding-top:0;}
 .round-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;}
 @media (max-width:760px){.round-grid{grid-template-columns:minmax(0,1fr);}}
@@ -2038,6 +2052,86 @@ function scorecardTableHtml(m, round){
   const holeHeaders = round.holes.map(h=>`<th>${h.num}</th>`).join('');
   const parRow      = round.holes.map(h=>`<th>${h.par}</th>`).join('');
 
+  // ── MATCH PLAY ──────────────────────────────────────────────────
+  if(round.format === 'Match Play'){
+    const lScores = m.holeScores.landon;
+    const jScores = m.holeScores.josh;
+    const lAllow  = teamAllowanceForPair(m.landon, 'Match Play');
+    const jAllow  = teamAllowanceForPair(m.josh,   'Match Play');
+
+    // Build hole-by-hole result and running score
+    let running = 0; // positive = Landon leads, negative = Josh leads
+    const holeResults = round.holes.map((h, i) => {
+      const lv = lScores[i], jv = jScores[i];
+      if(lv == null || jv == null) return null;
+      // Apply strokes
+      const lDiff = Math.round(lAllow - jAllow);
+      const lNet = lDiff > 0 && h.hcp <= Math.min(lDiff,18) ? lv - 1 : lv;
+      const jDiff = Math.round(jAllow - lAllow);
+      const jNet = jDiff > 0 && h.hcp <= Math.min(jDiff,18) ? jv - 1 : jv;
+      if(lNet < jNet) running++;
+      else if(jNet < lNet) running--;
+      return { lv, jv, running };
+    });
+
+    // Score cells — W/L/H per hole for Landon
+    const lCells = round.holes.map((h, i) => {
+      const r = holeResults[i];
+      const lv = lScores[i], jv = jScores[i];
+      if(lv == null) return `<td class="landon">–</td>`;
+      const lDiff = Math.round(lAllow - jAllow);
+      const dot = lDiff > 0 && h.hcp <= Math.min(lDiff,18) ? `<span class="ls-stroke-dot"></span>` : '';
+      return `<td class="landon">${lv}${dot}</td>`;
+    }).join('');
+    const jCells = round.holes.map((h, i) => {
+      const jv = jScores[i];
+      if(jv == null) return `<td class="josh">–</td>`;
+      const jDiff = Math.round(jAllow - lAllow);
+      const dot = jDiff > 0 && h.hcp <= Math.min(jDiff,18) ? `<span class="ls-stroke-dot"></span>` : '';
+      return `<td class="josh">${jv}${dot}</td>`;
+    }).join('');
+
+    // Running score row — show match status after each hole
+    const statusCells = round.holes.map((h, i) => {
+      const r = holeResults[i];
+      if(!r) return `<td class="mp-status-cell mp-unknown">–</td>`;
+      const prev = i > 0 ? holeResults[i-1] : null;
+      const prevRunning = prev ? prev.running : 0;
+      // What happened on this hole
+      const lv = lScores[i], jv = jScores[i];
+      const lDiff = Math.round(lAllow - jAllow);
+      const lNet = lDiff > 0 && h.hcp <= Math.min(lDiff,18) ? lv - 1 : lv;
+      const jDiff = Math.round(jAllow - lAllow);
+      const jNet = jDiff > 0 && h.hcp <= Math.min(jDiff,18) ? jv - 1 : jv;
+      let holeBadge, holeCls;
+      if(lNet < jNet){ holeBadge='▲'; holeCls='mp-l-won'; }
+      else if(jNet < lNet){ holeBadge='▼'; holeCls='mp-j-won'; }
+      else{ holeBadge='='; holeCls='mp-halved'; }
+      // Running score label
+      const abs = Math.abs(r.running);
+      const runLabel = abs === 0 ? 'AS' : (r.running > 0 ? abs+'↑' : abs+'↓');
+      const runCls = r.running > 0 ? 'mp-run-l' : r.running < 0 ? 'mp-run-j' : 'mp-run-as';
+      return `<td class="mp-status-cell ${holeCls}"><span class="mp-hole-result">${holeBadge}</span><span class="mp-running ${runCls}">${runLabel}</span></td>`;
+    }).join('');
+
+    return `
+    <div class="ls-table-wrap">
+      <table class="ls-table mp-table">
+        <thead>
+          <tr><th class="ls-rowlabel">Hole</th>${holeHeaders}<th class="ls-margin-head" rowspan="3"></th></tr>
+          <tr><th class="ls-rowlabel">Par</th>${parRow}</tr>
+          <tr><th class="ls-rowlabel hcp-row">HCP</th>${round.holes.map(h=>`<th class="hcp-row">${h.hcp!=null?h.hcp:'–'}</th>`).join('')}</tr>
+        </thead>
+        <tbody>
+          <tr><th class="ls-rowlabel l">${playerRowLabelHtml(m.landon)}</th>${lCells}<td class="ls-margin-cell" rowspan="3">${marginBadgeHtml(m, round)}</td></tr>
+          <tr><th class="ls-rowlabel mp-status-head">Match</th>${statusCells}</tr>
+          <tr><th class="ls-rowlabel j">${playerRowLabelHtml(m.josh)}</th>${jCells}</tr>
+        </tbody>
+      </table>
+    </div>`;
+  }
+
+  // ── BEST BALL ────────────────────────────────────────────────────
   if(round.format === 'Best Ball' && m.holeScores.landonPlayers){
     /* Show each player's individual score plus the best ball row */
     const mkIndivRow = (scores, otherBest, colorClass, label) => {
@@ -3187,9 +3281,11 @@ function renderQsScoreEntry(){
     <div class="qs-live-status" id="qsStatus">${st.holesPlayed===0?'Not started':st.label}</div>
     <div class="qs-holes">${holesHtml}</div>
     <button class="qs-save-btn" id="qsSaveBtn">Save Scores</button>
-    <div class="qs-saved-flash" id="qsSavedFlash">✓ Scores saved</div>`;
+    <div class="qs-saved-flash" id="qsSavedFlash">✓ Scores saved</div>
+    <button class="btn" id="qsDoneBtn" style="width:100%;margin-top:12px;background:var(--ink-2);border:1px solid var(--hairline);color:var(--parchment);font-size:15px;padding:14px;">✕ Close</button>`;
 
   document.getElementById('qsBack').addEventListener('click', renderQsMatchPicker);
+  document.getElementById('qsDoneBtn').addEventListener('click', closeQs);
 
   function collectQsScores(){
     if(isBB){
