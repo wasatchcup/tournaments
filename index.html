@@ -1814,6 +1814,9 @@ function renderLeaderboard(){
   const cupStats = computeCup2026Stats();
   const rows = Object.keys(PLAYERS).map(id=>({...PLAYERS[id], ...getPlayerStats(id, cupStats)})).sort((a,b)=>{
     if(b.diff !== a.diff) return b.diff - a.diff;
+    const aPlayed = a.wins + a.losses + a.draws;
+    const bPlayed = b.wins + b.losses + b.draws;
+    if(bPlayed !== aPlayed) return bPlayed - aPlayed;
     if(b.wins !== a.wins) return b.wins - a.wins;
     return a.name.localeCompare(b.name);
   });
