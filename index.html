@@ -2028,10 +2028,21 @@ function teamAllowanceForPair(ids, format){
 }
 
 function holeCellsFor(m, round, team, other){
-  const myAllowance  = teamAllowanceForPair(m[team],  round.format);
-  const oppAllowance = teamAllowanceForPair(m[other], round.format);
   const scores = m.holeScores[team] || round.holes.map(()=>null);
   const otherScores = m.holeScores[other] || round.holes.map(()=>null);
+
+  // For Match Play, use individual hdcp directly at 85%
+  let diff;
+  if(round.format === 'Match Play'){
+    const myHdcp  = PLAYERS[m[team][0]]?.hdcp ?? 0;
+    const oppHdcp = PLAYERS[m[other][0]]?.hdcp ?? 0;
+    diff = Math.round((myHdcp - oppHdcp) * 0.85);
+  } else {
+    const myAllowance  = teamAllowanceForPair(m[team],  round.format);
+    const oppAllowance = teamAllowanceForPair(m[other], round.format);
+    diff = Math.round(myAllowance - oppAllowance);
+  }
+
   return round.holes.map((h,i)=>{
     const v = scores[i];
     const ov = otherScores[i];
@@ -2040,7 +2051,6 @@ function holeCellsFor(m, round, team, other){
       if(v < ov) cls += ' won';
       else if(v === ov) cls += ' halved';
     }
-    const diff = Math.round(myAllowance - oppAllowance);
     const strokes = diff > 0 && h.hcp <= Math.min(diff, 18) ? 1 : 0;
     const dot = strokes > 0 ? `<span class="ls-stroke-dot"></span>` : '';
     return `<td class="${cls}">${v==null ? '&ndash;' : v}${dot}</td>`;
@@ -2088,15 +2098,13 @@ function scorecardTableHtml(m, round){
     // Score cells
     const lCells = round.holes.map((h, i) => {
       const lv = lScores[i];
-      if(lv == null) return `<td class="landon">–</td>`;
       const dot = lDiff > 0 && h.hcp <= Math.min(lDiff,18) ? `<span class="ls-stroke-dot"></span>` : '';
-      return `<td class="landon">${lv}${dot}</td>`;
+      return `<td class="landon">${lv == null ? '&ndash;' : lv}${dot}</td>`;
     }).join('');
     const jCells = round.holes.map((h, i) => {
       const jv = jScores[i];
-      if(jv == null) return `<td class="josh">–</td>`;
       const dot = jDiff > 0 && h.hcp <= Math.min(jDiff,18) ? `<span class="ls-stroke-dot"></span>` : '';
-      return `<td class="josh">${jv}${dot}</td>`;
+      return `<td class="josh">${jv == null ? '&ndash;' : jv}${dot}</td>`;
     }).join('');
 
     // Running score row
