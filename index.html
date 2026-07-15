@@ -1681,7 +1681,7 @@ const FORMATS = [
   {roundId:'r3', name:'Scramble', tagline:'The easiest format to follow along with',
     description:`Both players hit a tee shot, then pick whichever one ended up in the better spot. Both play their next shot from there, and they keep repeating that, always from the best ball, until it's in the hole. Handicap allowance: 35% of the lower-handicapped player's course handicap, plus 15% of the higher-handicapped player's course handicap.`},
   {roundId:'r4', name:'Match Play', tagline:'Straight head-to-head, no partners',
-    description:`Two players go one-on-one for nine holes, no partner and no swapping balls. It's just each player's own ball, hole by hole, and whoever scores lower on a given hole wins it outright. Handicap allowance: 100% of the difference between the two players' course handicaps.`},
+    description:`Two players go one-on-one for nine holes, no partner and no swapping balls. It's just each player's own ball, hole by hole, and whoever scores lower on a given hole wins it outright. Handicap allowance: 85% of the difference between the two players' course handicaps. The higher-handicapped player receives strokes on the hardest holes first. Note: if the lowest handicap hole on the nine being played is higher than the stroke difference, no strokes are given.`},
 ];
 
 /* Total points available across the whole Cup (4+4+4 team matches + 8 singles = 20),
@@ -2065,8 +2065,12 @@ function scorecardTableHtml(m, round){
   if(round.format === 'Match Play'){
     const lScores = m.holeScores.landon;
     const jScores = m.holeScores.josh;
-    const lAllow  = teamAllowanceForPair(m.landon, 'Match Play');
-    const jAllow  = teamAllowanceForPair(m.josh,   'Match Play');
+    const lHdcp = PLAYERS[m.landon[0]]?.hdcp ?? 0;
+    const jHdcp = PLAYERS[m.josh[0]]?.hdcp ?? 0;
+    // 85% of the difference — positive means that side receives strokes
+    const rawDiff = (lHdcp - jHdcp) * 0.85;
+    const lDiff = Math.round(rawDiff);  // positive = landon gets strokes
+    const jDiff = Math.round(-rawDiff); // positive = josh gets strokes
 
     // Build hole-by-hole result and running score
     let running = 0; // positive = Landon leads, negative = Josh leads
@@ -2074,49 +2078,38 @@ function scorecardTableHtml(m, round){
       const lv = lScores[i], jv = jScores[i];
       if(lv == null || jv == null) return null;
       // Apply strokes
-      const lDiff = Math.round(lAllow - jAllow);
       const lNet = lDiff > 0 && h.hcp <= Math.min(lDiff,18) ? lv - 1 : lv;
-      const jDiff = Math.round(jAllow - lAllow);
       const jNet = jDiff > 0 && h.hcp <= Math.min(jDiff,18) ? jv - 1 : jv;
       if(lNet < jNet) running++;
       else if(jNet < lNet) running--;
       return { lv, jv, running };
     });
 
-    // Score cells — W/L/H per hole for Landon
+    // Score cells
     const lCells = round.holes.map((h, i) => {
-      const r = holeResults[i];
-      const lv = lScores[i], jv = jScores[i];
+      const lv = lScores[i];
       if(lv == null) return `<td class="landon">–</td>`;
-      const lDiff = Math.round(lAllow - jAllow);
       const dot = lDiff > 0 && h.hcp <= Math.min(lDiff,18) ? `<span class="ls-stroke-dot"></span>` : '';
       return `<td class="landon">${lv}${dot}</td>`;
     }).join('');
     const jCells = round.holes.map((h, i) => {
       const jv = jScores[i];
       if(jv == null) return `<td class="josh">–</td>`;
-      const jDiff = Math.round(jAllow - lAllow);
       const dot = jDiff > 0 && h.hcp <= Math.min(jDiff,18) ? `<span class="ls-stroke-dot"></span>` : '';
       return `<td class="josh">${jv}${dot}</td>`;
     }).join('');
 
-    // Running score row — show match status after each hole
+    // Running score row
     const statusCells = round.holes.map((h, i) => {
       const r = holeResults[i];
       if(!r) return `<td class="mp-status-cell mp-unknown">–</td>`;
-      const prev = i > 0 ? holeResults[i-1] : null;
-      const prevRunning = prev ? prev.running : 0;
-      // What happened on this hole
       const lv = lScores[i], jv = jScores[i];
-      const lDiff = Math.round(lAllow - jAllow);
       const lNet = lDiff > 0 && h.hcp <= Math.min(lDiff,18) ? lv - 1 : lv;
-      const jDiff = Math.round(jAllow - lAllow);
       const jNet = jDiff > 0 && h.hcp <= Math.min(jDiff,18) ? jv - 1 : jv;
       let holeBadge, holeCls;
       if(lNet < jNet){ holeBadge='▲'; holeCls='mp-l-won'; }
       else if(jNet < lNet){ holeBadge='▼'; holeCls='mp-j-won'; }
       else{ holeBadge='='; holeCls='mp-halved'; }
-      // Running score label
       const abs = Math.abs(r.running);
       const runLabel = abs === 0 ? 'AS' : (r.running > 0 ? abs+'↑' : abs+'↓');
       const runCls = r.running > 0 ? 'mp-run-l' : r.running < 0 ? 'mp-run-j' : 'mp-run-as';
@@ -3246,9 +3239,9 @@ function teamHandicapAllowance(hdcpA, hdcpB, format){
       allowanceA = isA_lower ? (0.35 * lower + 0.15 * higher) : (0.35 * higher + 0.15 * lower);
       allowanceB = isA_lower ? (0.35 * higher + 0.15 * lower) : (0.35 * lower + 0.15 * higher);
       break;
-    default: // Match Play: 100% difference
-      allowanceA = hdcpA;
-      allowanceB = hdcpB;
+    default: // Match Play: 85% of difference
+      allowanceA = hdcpA * 0.85;
+      allowanceB = hdcpB * 0.85;
   }
   return {allowanceA: Math.round(allowanceA), allowanceB: Math.round(allowanceB)};
 }
