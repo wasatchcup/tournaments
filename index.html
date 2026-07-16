@@ -1681,13 +1681,13 @@ ROUNDS.forEach(r=>{ ROUNDS_BY_ID[r.id] = r; });
 
 const FORMATS = [
   {roundId:'r1', name:'Chapman', tagline:'Two-man, with a twist on alternate shot',
-    description:`Both players in the pair hit their own tee shot. Then they swap — each plays the other partner's ball for the second shot. After that, the pair picks whichever ball is in the better spot and plays it alternately, taking turns until it's in the hole. Handicap allowance: 60% of the lower-handicapped player's course handicap, plus 40% of the higher-handicapped player's course handicap.`},
+    description:`Handicap allowance: 60% of the lower-handicapped player's course handicap, plus 40% of the higher-handicapped player's course handicap, following USGA guidelines.\n\nBoth players in the pair hit their own tee shot. Then they swap — each plays the other partner's ball for the second shot. After that, the pair picks whichever ball is in the better spot and plays it alternately, taking turns until it's in the hole.`},
   {roundId:'r2', name:'Best Ball', tagline:'Also known as four-ball',
-    description:`Both players in the pair play their own ball for the entire hole, just like a normal round. Whichever of the two scores is lower counts as the team's score for that hole. Handicap allowance: 85% of each player's course handicap.`},
+    description:`Handicap allowance: 85% of each player's course handicap, following USGA guidelines.\n\nBoth players in the pair play their own ball for the entire hole, just like a normal round. Whichever of the two scores is lower counts as the team's score for that hole.`},
   {roundId:'r3', name:'Scramble', tagline:'The easiest format to follow along with',
-    description:`Both players hit a tee shot, then pick whichever one ended up in the better spot. Both play their next shot from there, and they keep repeating that, always from the best ball, until it's in the hole. Handicap allowance: 35% of the lower-handicapped player's course handicap, plus 15% of the higher-handicapped player's course handicap.`},
+    description:`Handicap allowance: 35% of the lower-handicapped player's course handicap, plus 15% of the higher-handicapped player's course handicap, following USGA guidelines.\n\nBoth players hit a tee shot, then pick whichever one ended up in the better spot. Both play their next shot from there, and they keep repeating that, always from the best ball, until it's in the hole.`},
   {roundId:'r4', name:'Match Play', tagline:'Straight head-to-head, no partners',
-    description:`Two players go one-on-one for nine holes, no partner and no swapping balls. It's just each player's own ball, hole by hole, and whoever scores lower on a given hole wins it outright. Handicap allowance: 85% of the difference between the two players' course handicaps. The higher-handicapped player receives strokes on the hardest holes first. Note: if the lowest handicap hole on the nine being played is higher than the stroke difference, no strokes are given.`},
+    description:`Handicap allowance: 90% of the difference between the two players' course handicaps, following USGA guidelines. The higher-handicapped player receives strokes on the hardest holes first. Note: if the lowest handicap hole on the nine being played is higher than the stroke difference, no strokes are given.\n\nTwo players go one-on-one for nine holes, no partner and no swapping balls. It's just each player's own ball, hole by hole, and whoever scores lower on a given hole wins it outright.`},
 ];
 
 /* Total points available across the whole Cup (4+4+4 team matches + 8 singles = 20),
@@ -1948,7 +1948,7 @@ function renderFormats(){
         <div class="format-round-tag">${escapeHtml(r.nine)} &middot; ${escapeHtml(r.course)}</div>
       </div>
       <div class="format-tagline">${escapeHtml(f.tagline)}</div>
-      <p class="format-desc">${escapeHtml(f.description)}</p>
+      <p class="format-desc">${f.description.replace(/\n\n/g, '<br><br>')}</p>
       <div class="format-mp-note">Scored as match play &middot; lower score wins the hole</div>
     </div>`;
   }).join('');
@@ -2042,7 +2042,7 @@ function holeCellsFor(m, round, team, other){
   if(round.format === 'Match Play'){
     const myHdcp  = PLAYERS[m[team][0]]?.hdcp ?? 0;
     const oppHdcp = PLAYERS[m[other][0]]?.hdcp ?? 0;
-    diff = Math.round((myHdcp - oppHdcp) * 0.85);
+    diff = Math.round((myHdcp - oppHdcp) * 0.90);
   } else {
     const myAllowance  = teamAllowanceForPair(m[team],  round.format);
     const oppAllowance = teamAllowanceForPair(m[other], round.format);
@@ -2084,7 +2084,7 @@ function scorecardTableHtml(m, round){
     const lHdcp = PLAYERS[m.landon[0]]?.hdcp ?? 0;
     const jHdcp = PLAYERS[m.josh[0]]?.hdcp ?? 0;
     // 85% of the difference — positive means that side receives strokes
-    const rawDiff = (lHdcp - jHdcp) * 0.85;
+    const rawDiff = (lHdcp - jHdcp) * 0.90;
     const lDiff = Math.round(rawDiff);  // positive = landon gets strokes
     const jDiff = Math.round(-rawDiff); // positive = josh gets strokes
 
@@ -3255,9 +3255,9 @@ function teamHandicapAllowance(hdcpA, hdcpB, format){
       allowanceA = isA_lower ? (0.35 * lower + 0.15 * higher) : (0.35 * higher + 0.15 * lower);
       allowanceB = isA_lower ? (0.35 * higher + 0.15 * lower) : (0.35 * lower + 0.15 * higher);
       break;
-    default: // Match Play: 85% of difference
-      allowanceA = hdcpA * 0.85;
-      allowanceB = hdcpB * 0.85;
+    default: // Match Play: 90% of difference
+      allowanceA = hdcpA * 0.90;
+      allowanceB = hdcpB * 0.90;
   }
   return {allowanceA: Math.round(allowanceA), allowanceB: Math.round(allowanceB)};
 }
