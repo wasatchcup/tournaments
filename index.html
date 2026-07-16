@@ -2383,7 +2383,7 @@ function computeScores(){
         played++;
         landon += pts[0];
         josh += pts[1];
-      } else {
+      } else if(st.holesPlayed > 0){
         active++;
       }
     });
@@ -2394,7 +2394,8 @@ function renderScoreboard(){
   const {landon, josh, played, active, projLandon, projJosh} = computeScores();
   document.getElementById('sbLandonScore').textContent = fmtNum(landon);
   document.getElementById('sbJoshScore').textContent = fmtNum(josh);
-  document.getElementById('sbMatches').textContent = played + ' of ' + TOTAL_POINTS + ' matches played' + (active ? ' \u00B7 ' + active + ' live' : '');
+  const totalEntered = ROUNDS.reduce((sum,r)=>sum+(matchups[r.id]||[]).length, 0);
+  document.getElementById('sbMatches').textContent = played + ' of ' + totalEntered + ' matches played' + (active ? ' \u00B7 ' + active + ' live' : '');
   document.getElementById('sbToWin').textContent = fmtNum(POINTS_TO_WIN);
 
   document.getElementById('sbLandonScore').classList.toggle('lead', landon > josh);
@@ -2545,10 +2546,7 @@ function updateCupProbStrip(){
     });
   });
 
-  /* Also factor in matches not yet entered in admin — they count as 50/50 */
-  const unenteredMatches = TOTAL_POINTS - totalMatches;
-  expL += unenteredMatches * 0.5;
-  expJ += unenteredMatches * 0.5;
+  /* Don't add phantom matches — only project based on actual entered matchups */
 
   if(!anyAction){ strip.style.display='none'; return; }
 
