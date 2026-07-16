@@ -1547,7 +1547,7 @@ const PLAYERS = {
 • 2019 U.S. Junior Am Champion*
 • Qualified for the 2016 U.S. Junior Am*
 • Undefeated in Match Play*
-• 8x AWL
+• 6x AWL
 • Type 1 Diabetic
 
 *Caddied only. Accomplishments belong to the golfer.`},
@@ -1559,7 +1559,11 @@ const PLAYERS = {
 • Five-Footer Gimme Merchant
 
 *self-proclaimed, in no way an official sponsored athlete`},
-  'cam-howe':        {name:'Cam Howe',         wins:0, losses:0, draws:0, teamWin:0, teamLoss:0, team:'landon', hdcp:-4.0, bio:`• Bio coming soon`},
+  'cam-howe':        {name:'Cam Howe',         wins:0, losses:0, draws:0, teamWin:0, teamLoss:0, team:'landon', hdcp:-4.0, bio:`• Personal Trainer at the Box
+• New Father
+• Dog Father
+• Peptides (the good kind)
+• 194 Ball Speed`},
   'john-cook':       {name:'John Cook',       wins:2, losses:2, draws:0, teamWin:0, teamLoss:1, team:'landon', hdcp:-4.1, bio:`• 11-time PGA Tour Winner... wait, wrong John Cook
 • Wendover's Worst Nightmare
 • "Tenacious Work Ethic" (according to LinkedIn)
@@ -1583,14 +1587,14 @@ const PLAYERS = {
 
   'josh-pehrson':    {name:'Josh Pehrson',    wins:5, losses:2, draws:1, teamWin:2, teamLoss:0, team:'josh', hdcp:-1.9, bio:`• Future girl dad
 • US Amateur 4 Ball
-• Husband to a pregnant wife
+• 2x AWL
 • Construction guy (but not a truck guy according to Quinn)
 • "Never beat Landon when he's healthy" - Landon
 • 2025 Davis Park Club Champ`},
   'zac-cottrell':    {name:'Zac Cottrell',    wins:2, losses:6, draws:0, teamWin:1, teamLoss:1, team:'josh', hdcp:6.8, bio:`• Utah high school consistency scoring record: 79.00
 • Low amateur Utah Open*
 • Final group with Patrick Fishburn, Utah Open*
-• Round of 64, Utah State Am*
+• 9x AWL
 • Personal best 68
 • Not great at alt shot
 
@@ -1624,6 +1628,7 @@ const PLAYERS = {
 • 1 Korn Ferry start (on the bag)`},
   'ben-dunford':     {name:'Ben Dunford',     wins:0, losses:0, draws:0, teamWin:0, teamLoss:0, team:'josh', hdcp:5.4, bio:`• Realtor — clients describe him as knowledgeable, friendly, professional, an excellent communicator, and responsive
 • Golfer
+• Dog Father
 • Firm believer that every double bogey is just a setup for a great comeback`},
   'grant-wilson':    {name:'Grant Wilson',    wins:0, losses:0, draws:0, teamWin:0, teamLoss:0, team:'josh', hdcp:1.1, bio:`• Future girl dad
 • Investment banker`},
@@ -2377,15 +2382,19 @@ function computeScores(){
     matchups[r.id].forEach(m=>{
       const st = computeMatchStatus(m, r);
       const pts = st.leader==='landon' ? [1,0] : st.leader==='josh' ? [0,1] : [0.5,0.5];
-      projLandon += pts[0];
-      projJosh += pts[1];
       if(st.isFinal){
         played++;
         landon += pts[0];
         josh += pts[1];
+        projLandon += pts[0];
+        projJosh += pts[1];
       } else if(st.holesPlayed > 0){
         active++;
+        // Project based on current leader
+        projLandon += pts[0];
+        projJosh += pts[1];
       }
+      // Unstarted matches don't contribute to projected final
     });
   });
   return {landon, josh, played, active, projLandon, projJosh};
