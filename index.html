@@ -1705,6 +1705,33 @@ const ADMIN_PASSWORD = '2024';
 const QS_PASSWORD = '2026';
 /* ========================= FIREBASE REALTIME DATABASE ========================= */
 const FB_URL = 'https://wasatch-cup-default-rtdb.firebaseio.com/matchups.json';
+const FB_HDCP_URL = 'https://wasatch-cup-default-rtdb.firebaseio.com/handicaps.json';
+
+async function saveHdcpsToFirebase(){
+  const hdcps = {};
+  Object.keys(PLAYERS).forEach(id => { hdcps[id] = PLAYERS[id].hdcp; });
+  try {
+    await fetch(FB_HDCP_URL, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(hdcps)
+    });
+  } catch(e){ console.warn('Handicap save failed', e); }
+}
+
+async function loadHdcpsFromFirebase(){
+  try {
+    const res = await fetch(FB_HDCP_URL);
+    if(res.ok){
+      const data = await res.json();
+      if(data && typeof data === 'object'){
+        Object.keys(data).forEach(id => {
+          if(PLAYERS[id] && data[id] !== null) PLAYERS[id].hdcp = data[id];
+        });
+      }
+    }
+  } catch(e){ console.warn('Handicap load failed', e); }
+}
 
 
 /* Firebase converts sparse arrays to objects — convert them back */
@@ -3088,6 +3115,7 @@ document.getElementById('saveHdcpBtn').addEventListener('click', async () => {
     const num = parseFloat(raw.replace('+', ''));
     if(!isNaN(num)) PLAYERS[id].hdcp = isPlus ? -num : num;
   });
+  await saveHdcpsToFirebase();
   const msg = document.getElementById('hdcpSaveMsg');
   msg.style.display = 'block';
   setTimeout(() => msg.style.display = 'none', 3000);
@@ -3393,6 +3421,7 @@ function renderQsScoreEntry(){
 
 /* ========================= INIT ========================= */
 async function initApp(){
+  await loadHdcpsFromFirebase();
   matchups = await loadMatchupsFromStorage();
   const warnEl = document.getElementById('storageWarning');
   if(warnEl) warnEl.style.display = 'none';
