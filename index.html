@@ -1701,7 +1701,8 @@ const POINTS_TO_WIN = TOTAL_POINTS / 2 + 0.5;
    3. In-memory only — nothing persists (safeguard if both are unavailable) */
 let matchups = {r1:[], r2:[], r3:[], r4:[]};
 let authed = false;
-const ADMIN_PASSWORD = '2026';
+const ADMIN_PASSWORD = '2024';
+const QS_PASSWORD = '2026';
 /* ========================= FIREBASE REALTIME DATABASE ========================= */
 const FB_URL = 'https://wasatch-cup-default-rtdb.firebaseio.com/matchups.json';
 
@@ -3158,7 +3159,7 @@ function renderQsAuth(){
   const inp = document.getElementById('qsPassInput');
   inp.focus();
   const attempt = ()=>{
-    if(inp.value === ADMIN_PASSWORD){
+    if(inp.value === QS_PASSWORD){
       qsAuthed = true;
       document.getElementById('qsErr').style.display = 'none';
       renderQsRoundPicker();
