@@ -509,6 +509,11 @@ button{font-family:inherit;cursor:pointer;}
   border:1px dashed var(--hairline);border-radius:var(--radius-sm);
   padding:14px;text-align:center;
 }
+.rmatchups-divider{
+  display:flex;align-items:center;gap:10px;margin:6px 0 2px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);
+}
+.rmatchups-divider::before,.rmatchups-divider::after{content:'';flex:1;height:1px;background:var(--hairline);}
 .live-scorecard{
   background:var(--ink-2);border:1px solid var(--hairline-soft);border-radius:var(--radius-sm);
   padding:16px 16px 14px;
@@ -2433,15 +2438,15 @@ function isRoundComplete(r){
 }
 function renderBattlefield(){
   const html = ROUNDS.map(r=>{
-    const list = matchups[r.id].slice().sort((a,b)=>{
-      const fa = computeMatchStatus(a, r).isFinal ? 1 : 0;
-      const fb = computeMatchStatus(b, r).isFinal ? 1 : 0;
-      return fa - fb; // in-progress / not-started first, completed matches sink to the bottom within the round
-    });
+    const list = matchups[r.id];
+    const active = list.filter(m => !computeMatchStatus(m, r).isFinal);
+    const completed = list.filter(m => computeMatchStatus(m, r).isFinal);
     const body = list.length
-      ? `<div class="rmatchups">${list.map(m=>{
-          return battlefieldMatchHtml(m, r);
-        }).join('')}</div>`
+      ? `<div class="rmatchups">
+          ${active.map(m => battlefieldMatchHtml(m, r)).join('')}
+          ${(active.length && completed.length) ? `<div class="rmatchups-divider">Completed</div>` : ''}
+          ${completed.map(m => battlefieldMatchHtml(m, r)).join('')}
+        </div>`
       : `<div class="rmatchups"><div class="tbd-note">Matchup TBD — pairings announced closer to August 29</div></div>`;
     return `
     <div class="round-card reveal ${isRoundComplete(r)?'round-complete':''}">
