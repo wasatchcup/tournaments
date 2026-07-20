@@ -2653,37 +2653,33 @@ function collectAllMatches(){
    while the corresponding back-9 round hasn't fully kicked off yet. */
 function completedLiveMatchHtml(m, round){
   const st = computeMatchStatus(m, round);
-  const res = resultLabel(m, round).replace(/<[^>]*>/g, '').replace(/&middot;/g, '·').replace(/&amp;/g, '&');
   const lLead = st.leader === 'landon';
   const jLead = st.leader === 'josh';
+  const lName = escapeHtml(namesFor(m.landon));
+  const jName = escapeHtml(namesFor(m.josh));
 
-  const mkSide = (ids, teamKey) => ids.map(id => {
-    const p = PLAYERS[id];
-    const [first, ...rest] = (p?.name||id).split(' ');
-    const img = HEADSHOT_DATA[id]
-      ? `<img class="mu-avatar ${teamKey}" src="${HEADSHOT_DATA[id]}" alt="${escapeHtml(p?.name||id)}">`
-      : `<div class="mu-avatar ${teamKey}" style="background:var(--ink-2);display:flex;align-items:center;justify-content:center;font-size:20px;">⛳</div>`;
-    return `<div class="mu-player">${img}<span class="mu-name ${teamKey}">${escapeHtml(first)}<br>${escapeHtml(rest.join(' '))}</span></div>`;
-  }).join('');
-
-  const winnerName = lLead ? escapeHtml(namesFor(m.landon)) : jLead ? escapeHtml(namesFor(m.josh)) : null;
   const centerHtml = `
-    <div class="ls-live-score-big" style="font-size:18px;color:var(--gold);">FINAL</div>
-    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--parchment);text-align:center;margin-top:2px;">${escapeHtml(res)}</div>
-    ${winnerName ? `<div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);text-align:center;margin-top:2px;">${winnerName} wins</div>` : ''}`;
+    <div class="ls-live-score-big" style="font-size:16px;color:var(--gold);">FINAL</div>
+    <div class="bf-center-status" style="margin-top:2px;">${resultLabel(m, round)}</div>`;
 
   return `
   <details class="live-scorecard spotlight-card completed-live-card" style="overflow:hidden;">
     <summary style="list-style:none;cursor:pointer;padding:14px 16px;">
-      <div style="text-align:center;margin-bottom:10px;">
+      <div class="bf-top-row" style="justify-content:center;margin-bottom:10px;">
         <span class="bf-badge final">Final</span>
-        <span style="font-family:'Anton',sans-serif;font-size:16px;text-transform:uppercase;letter-spacing:0.05em;color:var(--parchment);margin-left:8px;">${escapeHtml(round.format)}</span>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);margin-left:6px;">· ${escapeHtml(round.nine)} · tap ▾</span>
+        <span style="font-family:'Anton',sans-serif;font-size:16px;text-transform:uppercase;letter-spacing:0.05em;color:var(--parchment);">${escapeHtml(round.format)}</span>
+        <span class="bf-format-tag">· ${escapeHtml(round.nine)} · tap ▾</span>
       </div>
-      <div class="mu-vs-row">
-        <div class="mu-side${lLead?' bf-winning':''}">${mkSide(m.landon,'l')}</div>
-        <div class="mu-vs-col" style="display:flex;flex-direction:column;align-items:center;gap:2px;">${centerHtml}</div>
-        <div class="mu-side${jLead?' bf-winning':''}">${mkSide(m.josh,'j')}</div>
+      <div class="bf-players">
+        <div class="bf-side${lLead?' bf-winning':''}">
+          <span class="bf-pname l">${lName}</span>
+          ${lLead ? `<span class="bf-lead-dot" style="background:var(--landon)"></span>` : ''}
+        </div>
+        <div class="bf-mid">${centerHtml}</div>
+        <div class="bf-side right${jLead?' bf-winning':''}">
+          ${jLead ? `<span class="bf-lead-dot" style="background:var(--josh)"></span>` : ''}
+          <span class="bf-pname j">${jName}</span>
+        </div>
       </div>
     </summary>
     <div style="border-top:1px solid var(--hairline);padding:10px 8px;overflow-x:auto;">
