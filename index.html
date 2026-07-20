@@ -2521,6 +2521,7 @@ function renderMatchups(){
   if(!el) return;
   const fmtHdcp = h => h == null ? '?' : h < 0 ? '+' + Math.abs(h) : String(h);
   const roundHtml = ROUNDS.map(r => {
+    try {
     const list = matchups[r.id] || [];
     if(!list.length) return `
       <div class="mu-round-block">
@@ -2563,6 +2564,16 @@ function renderMatchups(){
       </details>`;
     }).join('');
     return `<div class="mu-round-block"><div class="mu-round-header"><div class="mu-round-tag">${escapeHtml(r.format)} · ${escapeHtml(r.nine)}</div><div class="mu-round-title">${escapeHtml(r.course)}</div><div class="mu-round-sub">${list.length} matchup${list.length!==1?'s':''}</div></div>${cardsHtml}</div>`;
+    } catch(e) {
+      console.error('Failed to render round', r.id, e);
+      return `<div class="mu-round-block">
+        <div class="mu-round-header">
+          <div class="mu-round-tag">${escapeHtml(r.format)} · ${escapeHtml(r.nine)}</div>
+          <div class="mu-round-title">${escapeHtml(r.course)}</div>
+        </div>
+        <div class="mu-empty">Matchups not yet announced</div>
+      </div>`;
+    }
   }).join('');
   el.innerHTML = roundHtml;
 }
@@ -3508,17 +3519,22 @@ async function initApp(){
   matchups = await loadMatchupsFromStorage();
   const warnEl = document.getElementById('storageWarning');
   if(warnEl) warnEl.style.display = 'none';
-  renderLeaderboard();
-  renderLiveLeaderboard();
-  renderChampions();
-  renderTeams();
-  renderBios();
-  renderFormats();
-  renderMatchups();
-  renderBattlefield();
-  renderScoreboard();
-  updateCupProbStrip();
-  renderLiveScoring();
+
+  // Each render step runs in isolation — if one throws (e.g. malformed
+  // data from Firebase), it's logged but doesn't prevent the rest of the
+  // page (including landing on the Live tab) from working.
+  const safe = (name, fn) => { try{ fn(); } catch(e){ console.error(name + ' failed', e); } };
+  safe('renderLeaderboard', renderLeaderboard);
+  safe('renderLiveLeaderboard', renderLiveLeaderboard);
+  safe('renderChampions', renderChampions);
+  safe('renderTeams', renderTeams);
+  safe('renderBios', renderBios);
+  safe('renderFormats', renderFormats);
+  safe('renderMatchups', renderMatchups);
+  safe('renderBattlefield', renderBattlefield);
+  safe('renderScoreboard', renderScoreboard);
+  safe('updateCupProbStrip', updateCupProbStrip);
+  safe('renderLiveScoring', renderLiveScoring);
   showPage('live');
   startPolling();
 }
