@@ -2030,13 +2030,18 @@ function emptyHoleScores(round){
 function computeMatchStatus(m, round){
   const totalHoles = round.holes.length;
   let landonWins = 0, joshWins = 0, holesPlayed = 0;
+
+  // Scores are entered as NET (strokes already accounted for by whoever is
+  // recording them), so hole results come straight from a direct comparison
+  // — no further stroke adjustment here. The handicap allowance is only
+  // used elsewhere to decide which holes to visually mark with a stroke dot.
   for(let i=0;i<totalHoles;i++){
     const ls = m.holeScores.landon[i], js = m.holeScores.josh[i];
     if(ls==null || js==null) continue;
     holesPlayed++;
     if(ls < js) landonWins++;
     else if(js < ls) joshWins++;
-    // equal strokes halves the hole — no one gets it
+    // equal net strokes halves the hole — no one gets it
   }
   const diff = landonWins - joshWins;
   const holesRemaining = totalHoles - holesPlayed;
@@ -2158,11 +2163,10 @@ function scorecardTableHtml(m, round){
     const holeResults = round.holes.map((h, i) => {
       const lv = lScores[i], jv = jScores[i];
       if(lv == null || jv == null) return null;
-      // Apply strokes
-      const lNet = lDiff > 0 && h.hcp <= Math.min(lDiff,18) ? lv - 1 : lv;
-      const jNet = jDiff > 0 && h.hcp <= Math.min(jDiff,18) ? jv - 1 : jv;
-      if(lNet < jNet) running++;
-      else if(jNet < lNet) running--;
+      // Scores are already entered as net — compare directly, no further
+      // stroke subtraction. The dots below are purely informational.
+      if(lv < jv) running++;
+      else if(jv < lv) running--;
       return { lv, jv, running };
     });
 
@@ -2183,11 +2187,9 @@ function scorecardTableHtml(m, round){
       const r = holeResults[i];
       if(!r) return `<td class="mp-status-cell mp-unknown">–</td>`;
       const lv = lScores[i], jv = jScores[i];
-      const lNet = lDiff > 0 && h.hcp <= Math.min(lDiff,18) ? lv - 1 : lv;
-      const jNet = jDiff > 0 && h.hcp <= Math.min(jDiff,18) ? jv - 1 : jv;
       let holeBadge, holeCls;
-      if(lNet < jNet){ holeBadge='▲'; holeCls='mp-l-won'; }
-      else if(jNet < lNet){ holeBadge='▼'; holeCls='mp-j-won'; }
+      if(lv < jv){ holeBadge='▲'; holeCls='mp-l-won'; }
+      else if(jv < lv){ holeBadge='▼'; holeCls='mp-j-won'; }
       else{ holeBadge='='; holeCls='mp-halved'; }
       const abs = Math.abs(r.running);
       const runLabel = abs === 0 ? 'AS' : (r.running > 0 ? abs+'↑' : abs+'↓');
