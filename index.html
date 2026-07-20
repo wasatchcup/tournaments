@@ -2652,9 +2652,10 @@ function collectAllMatches(){
 /* Compact "Final" card shown at the bottom of Live Now for completed front-9 matches
    while the corresponding back-9 round hasn't fully kicked off yet. */
 function completedLiveMatchHtml(m, round){
-  const res = resultLabel(m, round);
-  const lLead = computeMatchStatus(m, round).leader === 'landon';
-  const jLead = computeMatchStatus(m, round).leader === 'josh';
+  const st = computeMatchStatus(m, round);
+  const res = resultLabel(m, round).replace(/<[^>]*>/g, '').replace(/&middot;/g, '·').replace(/&amp;/g, '&');
+  const lLead = st.leader === 'landon';
+  const jLead = st.leader === 'josh';
 
   const mkSide = (ids, teamKey) => ids.map(id => {
     const p = PLAYERS[id];
