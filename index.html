@@ -2483,7 +2483,7 @@ function renderScoreboard(){
   document.getElementById('sbLandonScore').textContent = fmtNum(landon);
   document.getElementById('sbJoshScore').textContent = fmtNum(josh);
   const totalEntered = ROUNDS.reduce((sum,r)=>sum+(matchups[r.id]||[]).length, 0);
-  document.getElementById('sbMatches').textContent = played + ' of ' + totalEntered + ' matches played' + (active ? ' \u00B7 ' + active + ' live' : '');
+  document.getElementById('sbMatches').textContent = played + ' of ' + TOTAL_POINTS + ' matches played' + (active ? ' \u00B7 ' + active + ' live' : '');
   document.getElementById('sbToWin').textContent = fmtNum(POINTS_TO_WIN);
 
   document.getElementById('sbLandonScore').classList.toggle('lead', landon > josh);
@@ -2634,7 +2634,14 @@ function updateCupProbStrip(){
     });
   });
 
-  /* Don't add phantom matches — only project based on actual entered matchups */
+  /* Account for the matches that haven't been paired/entered yet as neutral
+     50/50 — otherwise the probability is wildly overconfident this early in
+     the Cup, since it'd be based on only a handful of the 20 total matches. */
+  const remaining = TOTAL_POINTS - totalMatches;
+  if(remaining > 0){
+    expL += remaining * 0.5;
+    expJ += remaining * 0.5;
+  }
 
   if(!anyAction){ strip.style.display='none'; return; }
 
