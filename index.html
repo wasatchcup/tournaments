@@ -3394,12 +3394,15 @@ function teamHandicapAllowance(hdcpA, hdcpB, format){
       allowanceA = hdcpA * 0.90;
       allowanceB = hdcpB * 0.90;
   }
-  return {allowanceA: Math.round(allowanceA), allowanceB: Math.round(allowanceB)};
+  return {allowanceA, allowanceB};
 }
 
 function strokesOnHole(hdcpA, hdcpB, holeHcp, format='Match Play'){
   const {allowanceA, allowanceB} = teamHandicapAllowance(hdcpA, hdcpB, format);
-  const diff = allowanceA - allowanceB;
+  // Use the unrounded allowances for the diff, then round once — rounding
+  // each side separately before subtracting can shift the result by a
+  // stroke versus rounding the true difference directly.
+  const diff = Math.round(allowanceA - allowanceB);
   if(diff <= 0) return 0;
   return holeHcp <= Math.min(diff, 18) ? 1 : 0;
 }
@@ -3432,11 +3435,20 @@ function renderQsScoreEntry(){
       const lBest=bbMin(lp[0][i],lp[1][i]), jBest=bbMin(jp[0][i],jp[1][i]);
       let rowClass='';
       if(lBest!=null&&jBest!=null){rowClass=lBest<jBest?'qs-hole-won-l':jBest<lBest?'qs-hole-won-j':'qs-hole-halved';}
-      // Best Ball: individual player strokes vs their direct opponent
+      // Best Ball: 85% of each player's own hdcp, compared against the
+      // opposing team's LOWEST allowance — mirrors the real scorecard's
+      // net-comparison logic exactly (see scorecardTableHtml's Best Ball
+      // branch). Rounds the difference directly rather than rounding each
+      // side separately, which can shift which holes get flagged.
+      const lAllow = lHdcp.map(h => 0.85 * h);
+      const jAllow = jHdcp.map(h => 0.85 * h);
+      const minLAllow = Math.min(...lAllow);
+      const minJAllow = Math.min(...jAllow);
       const mkInp=(side,p,v)=>{
-        const myHdcp=(side==='l'?lHdcp:jHdcp)[p]||0;
-        const oppHdcp=side==='l'?(jHdcp[p]||0):(lHdcp[p]||0);
-        const dots=strokesOnHole(myHdcp,oppHdcp,h.hcp,r.format);
+        const myAllow = (side==='l'?lAllow:jAllow)[p];
+        const oppMinAllow = side==='l' ? minJAllow : minLAllow;
+        const diff = Math.round(myAllow - oppMinAllow);
+        const dots = diff > 0 && h.hcp <= Math.min(diff,18) ? 1 : 0;
         const strokeDot=dots>0?` <span class="qs-stroke-dot">+${dots}</span>`:'';
         return `<div class="qs-score-cell"><label class="${side}">${(side==='l'?lNames:jNames)[p].split(' ')[0]}${strokeDot}</label><input class="qs-score-input${v!=null?' filled':''}" type="number" min="1" max="15" inputmode="numeric" pattern="[0-9]*" id="qsi-${side}${p}-${i}" value="${v!=null?v:''}" placeholder="–"></div>`;
       };
