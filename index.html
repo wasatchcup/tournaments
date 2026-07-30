@@ -2223,14 +2223,25 @@ function scorecardTableHtml(m, round){
   if(round.format === 'Best Ball'){
     /* Show each player's individual score plus the best ball row — always,
        even before any scores are entered, so the stroke allocation is
-       visible ahead of time. Falls back to empty placeholder arrays if
-       scores haven't been saved yet (stroke dots depend only on handicaps,
-       not on scores, so they still render correctly). */
+       visible ahead of time. normalizePairArray guards against every
+       malformed shape we might encounter in stored data (missing key,
+       empty array, short array, etc.) rather than a simple || fallback,
+       which doesn't catch e.g. an empty array (still truthy). */
     const emptyHoles = () => round.holes.map(()=>null);
-    const lp = m.holeScores.landonPlayers || [emptyHoles(), emptyHoles()];
-    const jp = m.holeScores.joshPlayers || [emptyHoles(), emptyHoles()];
-    const lBest = m.holeScores.landon || emptyHoles();
-    const jBest = m.holeScores.josh || emptyHoles();
+    const normalizePairArray = (val) => {
+      const a0 = (val && val[0]) ? val[0] : emptyHoles();
+      const a1 = (val && val[1]) ? val[1] : emptyHoles();
+      const pad = (arr) => round.holes.map((_,i)=> arr[i] === undefined ? null : arr[i]);
+      return [pad(a0), pad(a1)];
+    };
+    const normalizeSingleArray = (val) => {
+      if(!val) return emptyHoles();
+      return round.holes.map((_,i)=> val[i] === undefined ? null : val[i]);
+    };
+    const lp = normalizePairArray(m.holeScores.landonPlayers);
+    const jp = normalizePairArray(m.holeScores.joshPlayers);
+    const lBest = normalizeSingleArray(m.holeScores.landon);
+    const jBest = normalizeSingleArray(m.holeScores.josh);
     const lNames = m.landon.map(id=>PLAYERS[id]?.name||id);
     const jNames = m.josh.map(id=>PLAYERS[id]?.name||id);
 
