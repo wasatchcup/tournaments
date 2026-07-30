@@ -2220,33 +2220,17 @@ function scorecardTableHtml(m, round){
   }
 
   // ── BEST BALL ────────────────────────────────────────────────────
-  if(round.format === 'Best Ball' && m.holeScores.landonPlayers){
-    /* Show each player's individual score plus the best ball row */
-    const mkIndivRow = (scores, otherBest, colorClass, label) => {
-      const cells = round.holes.map((h,i)=>{
-        const v = scores[i];
-        const best = otherBest[i]; // the best ball score for this team on this hole
-        const isUsed = v!=null && v === bbMin(v, best==null?v:best) && v <= (best==null?v:best);
-        let cls = colorClass;
-        if(v!=null && v === round.holes.map((_,j)=>bbMin(scores[j], /* other player */ null))[i]){/* skip */}
-        return `<td${isUsed?' class="bb-used"':''}>${v==null?'&ndash;':v}</td>`;
-      }).join('');
-      return `<tr><th class="ls-rowlabel ${colorClass}">${escapeHtml(label)}</th>${cells}</tr>`;
-    };
-    const mkBbRow = (best, other, colorClass, label) => {
-      const cells = round.holes.map((h,i)=>{
-        const v = best[i];
-        const ov = other[i];
-        let cls = colorClass;
-        if(v!=null && ov!=null){ if(v<ov) cls+=' won'; else if(v===ov) cls+=' halved'; }
-        return `<td class="${cls} bb-best">${v==null?'&ndash;':v}</td>`;
-      }).join('');
-      return `<tr><th class="ls-rowlabel ${colorClass} bb-label">${escapeHtml(label)}</th>${cells}<td class="ls-margin-cell" rowspan="1">${marginBadgeHtml(m,round)}</td></tr>`;
-    };
-    const lp = m.holeScores.landonPlayers;
-    const jp = m.holeScores.joshPlayers;
-    const lBest = m.holeScores.landon;
-    const jBest = m.holeScores.josh;
+  if(round.format === 'Best Ball'){
+    /* Show each player's individual score plus the best ball row — always,
+       even before any scores are entered, so the stroke allocation is
+       visible ahead of time. Falls back to empty placeholder arrays if
+       scores haven't been saved yet (stroke dots depend only on handicaps,
+       not on scores, so they still render correctly). */
+    const emptyHoles = () => round.holes.map(()=>null);
+    const lp = m.holeScores.landonPlayers || [emptyHoles(), emptyHoles()];
+    const jp = m.holeScores.joshPlayers || [emptyHoles(), emptyHoles()];
+    const lBest = m.holeScores.landon || emptyHoles();
+    const jBest = m.holeScores.josh || emptyHoles();
     const lNames = m.landon.map(id=>PLAYERS[id]?.name||id);
     const jNames = m.josh.map(id=>PLAYERS[id]?.name||id);
 
