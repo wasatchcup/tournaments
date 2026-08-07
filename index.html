@@ -65,76 +65,58 @@ button{font-family:inherit;cursor:pointer;}
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* ===================== REVEAL LOCK OVERLAY ===================== */
-.reveal-lock{
-  position:fixed;inset:0;z-index:10000;
-  background:
-    radial-gradient(ellipse at 50% 0%, rgba(203,161,53,0.10), transparent 55%),
-    var(--ink);
-  display:flex;align-items:center;justify-content:center;
-  padding:24px;
-  overflow-y:auto;
-}
-.reveal-lock[hidden]{ display:none; }
-.reveal-lock-inner{
-  max-width:460px;width:100%;text-align:center;
-  padding:48px 32px;
+/* ===================== SECTION GATES ===================== */
+.section-gate{
+  max-width:460px;margin:0 auto 40px;text-align:center;
+  padding:40px 28px;
   background:var(--ink-1);
   border:1px solid rgba(203,161,53,0.25);
   border-radius:18px;
-  box-shadow:0 30px 80px rgba(0,0,0,0.5);
 }
-.reveal-lock-logo{ display:flex;justify-content:center;margin-bottom:18px; }
-.reveal-lock-eyebrow{
+.section-gate-eyebrow{
   font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.22em;
   text-transform:uppercase;color:var(--gold);margin-bottom:10px;
 }
-.reveal-lock-title{
+.section-gate-title{
   font-family:'Anton',sans-serif;text-transform:uppercase;letter-spacing:0.02em;
-  font-size:clamp(28px,7vw,40px);color:var(--parchment);line-height:1.05;margin-bottom:10px;
+  font-size:clamp(24px,6vw,34px);color:var(--parchment);line-height:1.05;margin-bottom:12px;
 }
-.reveal-lock-date{
-  font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--parchment-dim,#B9B2A3);
-  margin-bottom:30px;
+.section-gate-sub{
+  font-size:13px;color:var(--parchment-dim,#B9B2A3);line-height:1.5;
+  margin:0 auto 26px;max-width:330px;
 }
-.reveal-lock-countdown{
-  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:34px;
+.section-gate-countdown{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:22px 0 28px;
 }
 .rc-unit{
   background:var(--ink-2);border:1px solid rgba(255,255,255,0.06);border-radius:10px;
-  padding:14px 4px;
+  padding:12px 4px;
 }
 .rc-num{
-  display:block;font-family:'Anton',sans-serif;font-size:clamp(22px,5vw,30px);color:var(--gold);
+  display:block;font-family:'Anton',sans-serif;font-size:clamp(20px,5vw,28px);color:var(--gold);
   font-variant-numeric:tabular-nums;
 }
 .rc-label{
   display:block;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.12em;
   text-transform:uppercase;color:#8A8578;margin-top:4px;
 }
-.reveal-lock-pw{ border-top:1px solid rgba(255,255,255,0.08);padding-top:26px; }
-.reveal-lock-pw-label{
-  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;
-  color:#8A8578;margin-bottom:12px;
-}
-#revealPwForm{ display:flex;gap:8px; }
-.reveal-lock-pw-input{
+.section-gate-form{ display:flex;gap:8px; }
+.section-gate-input{
   flex:1;min-width:0;
   background:var(--ink-2);border:1px solid rgba(255,255,255,0.12);border-radius:8px;
   color:var(--parchment);font-family:'JetBrains Mono',monospace;font-size:15px;letter-spacing:0.1em;
   padding:12px 14px;text-align:center;
 }
-.reveal-lock-pw-input:focus{ outline:none;border-color:var(--gold); }
-.reveal-lock-pw-btn{
+.section-gate-input:focus{ outline:none;border-color:var(--gold); }
+.section-gate-btn{
   font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;
   background:var(--gold);color:var(--ink);border:none;border-radius:8px;padding:0 20px;
   cursor:pointer;font-weight:700;
 }
-.reveal-lock-pw-btn:hover{ opacity:0.9; }
-.reveal-lock-pw-error{
+.section-gate-btn:hover{ opacity:0.9; }
+.section-gate-error{
   margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#D97A6C;
 }
-body.reveal-locked{ overflow:hidden; }
 
 .eyebrow{
   font-family:'JetBrains Mono',monospace;
@@ -1323,108 +1305,100 @@ body.reveal-locked{ overflow:hidden; }
 
 <div class="grain"></div>
 
-<!-- ===================== REVEAL LOCK OVERLAY ===================== -->
-<div id="revealLock" class="reveal-lock">
-  <div class="reveal-lock-inner">
-    <div class="reveal-lock-logo">
-      <svg viewBox="0 0 100 100" width="56" height="56" aria-hidden="true">
-        <circle cx="50" cy="50" r="47" fill="none" stroke="var(--gold)" stroke-width="2"/>
-        <path d="M20 62 L38 34 L50 54 L62 30 L80 62 Z" fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-linejoin="round"/>
-      </svg>
-    </div>
-    <div class="reveal-lock-eyebrow">2026 WASATCH CUP</div>
-    <h1 class="reveal-lock-title">Matchups Revealed</h1>
-    <div class="reveal-lock-date">August 23, 2026 &middot; 6:30 PM</div>
-
-    <div class="reveal-lock-countdown" id="revealCountdown">
-      <div class="rc-unit"><span class="rc-num" id="rcDays">00</span><span class="rc-label">Days</span></div>
-      <div class="rc-unit"><span class="rc-num" id="rcHours">00</span><span class="rc-label">Hours</span></div>
-      <div class="rc-unit"><span class="rc-num" id="rcMins">00</span><span class="rc-label">Min</span></div>
-      <div class="rc-unit"><span class="rc-num" id="rcSecs">00</span><span class="rc-label">Sec</span></div>
-    </div>
-
-    <div class="reveal-lock-pw">
-      <div class="reveal-lock-pw-label">Have the password?</div>
-      <form id="revealPwForm" autocomplete="off">
-        <input type="password" id="revealPwInput" class="reveal-lock-pw-input" placeholder="Enter password" inputmode="numeric">
-        <button type="submit" class="reveal-lock-pw-btn">Unlock</button>
-      </form>
-      <div class="reveal-lock-pw-error" id="revealPwError" style="display:none;">Incorrect password — try again.</div>
-    </div>
-  </div>
-</div>
-<!-- =================== /REVEAL LOCK OVERLAY ======================= -->
 <script>
 (function(){
-  var REVEAL_AT = new Date(2026, 7, 23, 18, 30, 0).getTime(); // Aug 23, 2026, 6:30 PM (local time)
-  var UNLOCK_KEY = 'wasatchCupUnlocked2026';
-  var PASSWORD = '0403';
+  var PASSWORD    = '0403';
+  var MATCHUPS_AT = new Date(2026, 7, 23, 18, 30, 0).getTime();  // Aug 23, 2026 6:30 PM
+  var LIVE_AT     = new Date(2026, 7, 29,  8,  0, 0).getTime();  // Aug 29, 2026 8:00 AM (first tee)
 
-  var overlay = document.getElementById('revealLock');
-  var alreadyUnlocked = false;
-  try { alreadyUnlocked = localStorage.getItem(UNLOCK_KEY) === 'true'; } catch(e){}
+  var gates = {
+    matchups: { key:'wcUnlockMatchups2026', at:MATCHUPS_AT, gate:'matchupsGate', content:'matchupsGated' },
+    live:     { key:'wcUnlockLive2026',     at:LIVE_AT,     gate:'liveGate',     content:'liveGated' }
+  };
 
-  function unlock(persist){
-    if(persist){
-      try { localStorage.setItem(UNLOCK_KEY, 'true'); } catch(e){}
+  function isUnlocked(g){
+    if(Date.now() >= g.at) return true;
+    try { return localStorage.getItem(g.key) === 'true'; } catch(e){ return false; }
+  }
+
+  function apply(name){
+    var g = gates[name];
+    var gateEl = document.getElementById(g.gate);
+    var contentEl = document.getElementById(g.content);
+    if(!gateEl || !contentEl) return;
+    var open = isUnlocked(g);
+    gateEl.style.display    = open ? 'none'  : '';
+    contentEl.style.display = open ? ''      : 'none';
+  }
+
+  function unlockAll(){
+    for(var n in gates){
+      try { localStorage.setItem(gates[n].key, 'true'); } catch(e){}
+      apply(n);
     }
-    overlay.setAttribute('hidden', '');
-    document.body.classList.remove('reveal-locked');
-    if(countdownTimer) clearInterval(countdownTimer);
   }
 
-  function isPastReveal(){ return Date.now() >= REVEAL_AT; }
+  function init(){
+  Object.keys(gates).forEach(apply);
 
-  if(alreadyUnlocked || isPastReveal()){
-    unlock(false);
-    return; // no need to wire up the countdown/password UI at all
-  }
-
-  document.body.classList.add('reveal-locked');
-
-  var elDays = document.getElementById('rcDays');
-  var elHours = document.getElementById('rcHours');
-  var elMins = document.getElementById('rcMins');
-  var elSecs = document.getElementById('rcSecs');
-
-  function pad(n){ return String(n).padStart(2,'0'); }
-
-  function tick(){
-    var msLeft = REVEAL_AT - Date.now();
-    if(msLeft <= 0){
-      unlock(true);
-      return;
-    }
-    var totalSecs = Math.floor(msLeft / 1000);
-    var days = Math.floor(totalSecs / 86400);
-    var hours = Math.floor((totalSecs % 86400) / 3600);
-    var mins = Math.floor((totalSecs % 3600) / 60);
-    var secs = totalSecs % 60;
-    elDays.textContent = pad(days);
-    elHours.textContent = pad(hours);
-    elMins.textContent = pad(mins);
-    elSecs.textContent = pad(secs);
-  }
-
-  var countdownTimer = setInterval(tick, 1000);
-  tick();
-
-  var form = document.getElementById('revealPwForm');
-  var input = document.getElementById('revealPwInput');
-  var errorEl = document.getElementById('revealPwError');
-  form.addEventListener('submit', function(e){
+  // Password unlocks BOTH sections at once — one password, whole site.
+  document.addEventListener('submit', function(e){
+    var form = e.target.closest ? e.target.closest('[data-gate-form]') : null;
+    if(!form) return;
     e.preventDefault();
-    if(input.value.trim() === PASSWORD){
-      errorEl.style.display = 'none';
-      unlock(true);
+    var input = form.querySelector('.section-gate-input');
+    var err = form.parentNode.querySelector('.section-gate-error');
+    if(input && input.value.trim() === PASSWORD){
+      if(err) err.style.display = 'none';
+      unlockAll();
     } else {
-      errorEl.style.display = 'block';
-      input.value = '';
-      input.focus();
+      if(err) err.style.display = 'block';
+      if(input){ input.value=''; input.focus(); }
     }
   });
+
+  // Countdown to the matchups reveal
+  function pad(n){ return String(n).padStart(2,'0'); }
+  var els = {
+    d: document.getElementById('rcDays'), h: document.getElementById('rcHours'),
+    m: document.getElementById('rcMins'), s: document.getElementById('rcSecs')
+  };
+  if(els.d){
+    var timer = setInterval(function tick(){
+      var left = MATCHUPS_AT - Date.now();
+      if(left <= 0){ clearInterval(timer); apply('matchups'); return; }
+      var t = Math.floor(left/1000);
+      els.d.textContent = pad(Math.floor(t/86400));
+      els.h.textContent = pad(Math.floor((t%86400)/3600));
+      els.m.textContent = pad(Math.floor((t%3600)/60));
+      els.s.textContent = pad(t%60);
+    }, 1000);
+    (function(){
+      var left = MATCHUPS_AT - Date.now(), t = Math.floor(left/1000);
+      if(left > 0){
+        els.d.textContent = pad(Math.floor(t/86400));
+        els.h.textContent = pad(Math.floor((t%86400)/3600));
+        els.m.textContent = pad(Math.floor((t%3600)/60));
+        els.s.textContent = pad(t%60);
+      }
+    })();
+  }
+
+  // Live section unlocks itself the moment the first group tees off
+  if(!isUnlocked(gates.live)){
+    setInterval(function(){ if(Date.now() >= LIVE_AT) apply('live'); }, 1000);
+  }
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();
 </script>
+
+
 
 <header class="topnav">
   <div class="topnav-inner">
@@ -1469,6 +1443,20 @@ body.reveal-locked{ overflow:hidden; }
       </div>
     </div>
 
+    <div class="wrap" id="liveGate" style="display:none;">
+      <div class="section-gate">
+        <div class="section-gate-eyebrow">Locked</div>
+        <h2 class="section-gate-title">Live Scoring</h2>
+        <p class="section-gate-sub">Scores go live when the first group tees off on August 29. The countdown above is ticking.</p>
+        <form class="section-gate-form" data-gate-form="live" autocomplete="off">
+          <input type="password" class="section-gate-input" placeholder="Password" inputmode="numeric">
+          <button type="submit" class="section-gate-btn">Unlock</button>
+        </form>
+        <div class="section-gate-error" style="display:none;">Incorrect password — try again.</div>
+      </div>
+    </div>
+
+    <div id="liveGated">
     <div class="wrap faceoff">
       <div class="scoreboard-card reveal">
         <div class="scoreboard-clinched" id="scoreboardClinched" style="display:none;"></div>
@@ -1536,6 +1524,7 @@ body.reveal-locked{ overflow:hidden; }
       </div>
       <div class="round-grid" id="roundGrid"></div>
     </div>
+    </div>
 
     <div class="wrap status-section">
       <div class="faceoff-cta"><button type="button" data-nav="bios">See Full Rosters &rarr;</button></div>
@@ -1562,7 +1551,26 @@ body.reveal-locked{ overflow:hidden; }
       <div class="eyebrow">2026 Wasatch Cup</div>
       <h2 class="section-title" style="font-family:'Anton',sans-serif;font-size:clamp(28px,8vw,52px);text-transform:uppercase;letter-spacing:0.03em;">Today's Matchups</h2>
       <p style="color:var(--muted);font-size:14px;margin-bottom:28px;">August 29, 2026 · Davis Park &amp; Valley View</p>
-      <div id="matchupsBody"></div>
+
+      <div id="matchupsGate" style="display:none;">
+        <div class="section-gate">
+          <div class="section-gate-eyebrow">Matchups Revealed</div>
+          <h2 class="section-gate-title">August 23 &middot; 6:30 PM</h2>
+          <div class="section-gate-countdown" id="revealCountdown">
+            <div class="rc-unit"><span class="rc-num" id="rcDays">00</span><span class="rc-label">Days</span></div>
+            <div class="rc-unit"><span class="rc-num" id="rcHours">00</span><span class="rc-label">Hours</span></div>
+            <div class="rc-unit"><span class="rc-num" id="rcMins">00</span><span class="rc-label">Min</span></div>
+            <div class="rc-unit"><span class="rc-num" id="rcSecs">00</span><span class="rc-label">Sec</span></div>
+          </div>
+          <form class="section-gate-form" data-gate-form="matchups" autocomplete="off">
+            <input type="password" class="section-gate-input" placeholder="Password" inputmode="numeric">
+            <button type="submit" class="section-gate-btn">Unlock</button>
+          </form>
+          <div class="section-gate-error" style="display:none;">Incorrect password — try again.</div>
+        </div>
+      </div>
+
+      <div id="matchupsGated"><div id="matchupsBody"></div></div>
     </div>
   </section>
 
