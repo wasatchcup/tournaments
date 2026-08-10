@@ -1919,6 +1919,45 @@ const FORMATS = [
 const TOTAL_POINTS = 20;
 const POINTS_TO_WIN = TOTAL_POINTS / 2 + 0.5;
 
+/* Official Best Ball (Round 2) stroke counts, as set by the actual handicap
+   committee for the real pairings — this overrides the simplified 85%-of-
+   handicap formula below, since that formula doesn't always land on the
+   same number the committee assigned (course handicap conversion, not just
+   raw index, factors into the real number). Falls back to the formula for
+   any player not listed here. */
+/* Official team-level stroke overrides for Chapman/Scramble matches, where
+   the committee's real number differs from the simplified formula (same
+   reasoning as BEST_BALL_STROKE_OVERRIDES above — course handicap vs. raw
+   index). Keyed by "roundId:sortedJoshPlayerIds" since each Josh pairing is
+   unique within a round. */
+const TEAM_STROKE_OVERRIDES = {
+  'r3:ben-dunford,ryan-hubrich': { landon: 0, josh: 0 },
+};
+function teamStrokeOverrideFor(round, m){
+  const key = round.id + ':' + [...m.josh].sort().join(',');
+  return TEAM_STROKE_OVERRIDES[key];
+}
+
+const BEST_BALL_STROKE_OVERRIDES = {
+  'ian-cahoon': 1, 'dillon-griffin': 1, 'zac-cottrell': 1, 'grant-wilson': 0,
+  'landon-anderson': 0, 'mitchell-meyer': 2, 'josh-pehrson': 0, 'ben-dunford': 2,
+  'cooper-atkinson': 1, 'tom-rhodes': 3, 'palmer-brophy': 3, 'ryan-hubrich': 2,
+  'cam-howe': 0, 'jesse-henderson': 0, 'brendan-thomas': 0, 'jack-sargent': 0,
+};
+
+/* Returns the set of hole numbers (on this nine) that get a stroke for a
+   given stroke count — always the N hardest holes (lowest HCP index) on
+   THIS nine specifically. Using a rank-based cut here (rather than testing
+   hole.hcp <= strokeCount) matters because a nine's HCP indices aren't
+   always a contiguous 1..N run — e.g. a back nine using only the odd
+   indices (1,3,5,7...17) — so a simple threshold test can silently produce
+   fewer dots than the stated stroke count. Rank-based selection guarantees
+   an N-stroke player always gets exactly N holes marked. */
+function hardestHoleSet(holes, strokeCount){
+  if(!strokeCount || strokeCount <= 0) return new Set();
+  return new Set([...holes].sort((a,b)=>a.hcp-b.hcp).slice(0, strokeCount).map(h=>h.num));
+}
+
 /* Storage strategy:
    1. window.storage (Claude artifact shared storage) — scores sync for everyone on the same link
    2. localStorage — scores persist on this device/browser when opened as a standalone file
@@ -2301,10 +2340,16 @@ function holeCellsFor(m, round, team, other){
     const oppHdcp = PLAYERS[m[other][0]]?.hdcp ?? 0;
     diff = Math.round((myHdcp - oppHdcp) * 0.90);
   } else {
-    const myAllowance  = teamAllowanceForPair(m[team],  round.format);
-    const oppAllowance = teamAllowanceForPair(m[other], round.format);
-    diff = Math.round(myAllowance - oppAllowance);
+    const override = teamStrokeOverrideFor(round, m);
+    if(override !== undefined){
+      diff = override[team];
+    } else {
+      const myAllowance  = teamAllowanceForPair(m[team],  round.format);
+      const oppAllowance = teamAllowanceForPair(m[other], round.format);
+      diff = Math.round(myAllowance - oppAllowance);
+    }
   }
+  const strokeHoles = hardestHoleSet(round.holes, diff);
 
   return round.holes.map((h,i)=>{
     const v = scores[i];
@@ -2314,8 +2359,7 @@ function holeCellsFor(m, round, team, other){
       if(v < ov) cls += ' won';
       else if(v === ov) cls += ' halved';
     }
-    const strokes = diff > 0 && h.hcp <= Math.min(diff, 18) ? 1 : 0;
-    const dot = strokes > 0 ? `<span class="ls-stroke-dot"></span>` : '';
+    const dot = strokeHoles.has(h.num) ? `<span class="ls-stroke-dot"></span>` : '';
     return `<td class="${cls}">${v==null ? '&ndash;' : v}${dot}</td>`;
   }).join('');
 }
@@ -2436,33 +2480,42 @@ function scorecardTableHtml(m, round){
     const jAllow = jHdcp.map(h=>bbAllowance(h));
     const minJAllow = Math.min(...jAllow);
     const minLAllow = Math.min(...lAllow);
+    // Official committee stroke counts take priority over the formula when available.
+    const bbStrokes = (playerId, formulaDiff) => {
+      const override = BEST_BALL_STROKE_OVERRIDES[playerId];
+      return override !== undefined ? override : Math.max(0, formulaDiff);
+    };
+    const l0Strokes = bbStrokes(m.landon[0], Math.round(lAllow[0] - minJAllow));
+    const l1Strokes = bbStrokes(m.landon[1], Math.round(lAllow[1] - minJAllow));
+    const j0Strokes = bbStrokes(m.josh[0],   Math.round(jAllow[0] - minLAllow));
+    const j1Strokes = bbStrokes(m.josh[1],   Math.round(jAllow[1] - minLAllow));
+    const l0Holes = hardestHoleSet(round.holes, l0Strokes);
+    const l1Holes = hardestHoleSet(round.holes, l1Strokes);
+    const j0Holes = hardestHoleSet(round.holes, j0Strokes);
+    const j1Holes = hardestHoleSet(round.holes, j1Strokes);
 
     const lp0cells = round.holes.map((h,i)=>{
       const v=lp[0][i], other=lp[1][i], best=lBest[i];
       const used = v!=null && v===best && (other==null||v<=other);
-      const diff = Math.round(lAllow[0] - minJAllow);
-      const dot = diff > 0 && h.hcp <= Math.min(diff,18) ? `<span class="ls-stroke-dot"></span>` : '';
+      const dot = l0Holes.has(h.num) ? `<span class="ls-stroke-dot"></span>` : '';
       return `<td class="bb-ind${used?' bb-used':''}">${v==null?'&ndash;':v}${dot}</td>`;
     }).join('');
     const lp1cells = round.holes.map((h,i)=>{
       const v=lp[1][i], other=lp[0][i], best=lBest[i];
       const used = v!=null && v===best && (other==null||v<=other);
-      const diff = Math.round(lAllow[1] - minJAllow);
-      const dot = diff > 0 && h.hcp <= Math.min(diff,18) ? `<span class="ls-stroke-dot"></span>` : '';
+      const dot = l1Holes.has(h.num) ? `<span class="ls-stroke-dot"></span>` : '';
       return `<td class="bb-ind${used?' bb-used':''}">${v==null?'&ndash;':v}${dot}</td>`;
     }).join('');
     const jp0cells = round.holes.map((h,i)=>{
       const v=jp[0][i], other=jp[1][i], best=jBest[i];
       const used = v!=null && v===best && (other==null||v<=other);
-      const diff = Math.round(jAllow[0] - minLAllow);
-      const dot = diff > 0 && h.hcp <= Math.min(diff,18) ? `<span class="ls-stroke-dot"></span>` : '';
+      const dot = j0Holes.has(h.num) ? `<span class="ls-stroke-dot"></span>` : '';
       return `<td class="bb-ind${used?' bb-used':''}">${v==null?'&ndash;':v}${dot}</td>`;
     }).join('');
     const jp1cells = round.holes.map((h,i)=>{
       const v=jp[1][i], other=jp[0][i], best=jBest[i];
       const used = v!=null && v===best && (other==null||v<=other);
-      const diff = Math.round(jAllow[1] - minLAllow);
-      const dot = diff > 0 && h.hcp <= Math.min(diff,18) ? `<span class="ls-stroke-dot"></span>` : '';
+      const dot = j1Holes.has(h.num) ? `<span class="ls-stroke-dot"></span>` : '';
       return `<td class="bb-ind${used?' bb-used':''}">${v==null?'&ndash;':v}${dot}</td>`;
     }).join('');
     const lBestCells = round.holes.map((h,i)=>{
@@ -3621,26 +3674,53 @@ function renderQsScoreEntry(){
       const jAllow = jHdcp.map(h => 0.85 * h);
       const minLAllow = Math.min(...lAllow);
       const minJAllow = Math.min(...jAllow);
+      const bbStrokesFor = (playerId, formulaDiff) => {
+        const override = BEST_BALL_STROKE_OVERRIDES[playerId];
+        return override !== undefined ? override : Math.max(0, formulaDiff);
+      };
+      const l0Strokes = bbStrokesFor(m.landon[0], Math.round(lAllow[0] - minJAllow));
+      const l1Strokes = bbStrokesFor(m.landon[1], Math.round(lAllow[1] - minJAllow));
+      const j0Strokes = bbStrokesFor(m.josh[0],   Math.round(jAllow[0] - minLAllow));
+      const j1Strokes = bbStrokesFor(m.josh[1],   Math.round(jAllow[1] - minLAllow));
+      const strokesByKey = {l0:l0Strokes, l1:l1Strokes, j0:j0Strokes, j1:j1Strokes};
+      const holeSetsByKey = {
+        l0: hardestHoleSet(r.holes, l0Strokes), l1: hardestHoleSet(r.holes, l1Strokes),
+        j0: hardestHoleSet(r.holes, j0Strokes), j1: hardestHoleSet(r.holes, j1Strokes),
+      };
       const mkInp=(side,p,v)=>{
-        const myAllow = (side==='l'?lAllow:jAllow)[p];
-        const oppMinAllow = side==='l' ? minJAllow : minLAllow;
-        const diff = Math.round(myAllow - oppMinAllow);
-        const dots = diff > 0 && h.hcp <= Math.min(diff,18) ? 1 : 0;
+        const key = side+p;
+        const dots = strokesByKey[key] > 0 && holeSetsByKey[key].has(h.num) ? 1 : 0;
         const strokeDot=dots>0?` <span class="qs-stroke-dot">+${dots}</span>`:'';
         return `<div class="qs-score-cell"><label class="${side}">${(side==='l'?lNames:jNames)[p].split(' ')[0]}${strokeDot}</label><input class="qs-score-input${v!=null?' filled':''}" type="number" min="1" max="15" inputmode="numeric" pattern="[0-9]*" id="qsi-${side}${p}-${i}" value="${v!=null?v:''}" placeholder="–"></div>`;
       };
-      const lDiff=Math.round(lAllowance-jAllowance), jDiff=Math.round(jAllowance-lAllowance);
-      const strokeHl=(lDiff>0&&h.hcp<=lDiff)||(jDiff>0&&h.hcp<=jDiff)?' qs-stroke-hole':'';
+      const strokeHl = Object.keys(holeSetsByKey).some(k => holeSetsByKey[k].has(h.num)) ? ' qs-stroke-hole' : '';
       return `<div class="qs-hole-row qs-hole-row-bb ${rowClass}${strokeHl}" id="qshr-${i}"><div class="qs-hole-label">H${h.num}<span>Par ${h.par}</span></div>${mkInp('l',0,lp[0][i])}${mkInp('l',1,lp[1][i])}${mkInp('j',0,jp[0][i])}${mkInp('j',1,jp[1][i])}</div>`;
     }).join('');
   } else {
+    const override = teamStrokeOverrideFor(r, m);
+    let lDiffBase, jDiffBase;
+    if(override !== undefined){
+      lDiffBase = override.landon; jDiffBase = override.josh;
+    } else if(r.format === 'Match Play'){
+      // Match Play uses 90% of the individual handicap difference, not the
+      // raw team allowance (teamAllowanceForPair returns the raw hdcp for a
+      // single-player "team", so it must be scaled here to match the real
+      // formula used everywhere else in the app).
+      const rawDiff = (lHdcp[0] - jHdcp[0]) * 0.90;
+      lDiffBase = Math.round(rawDiff);
+      jDiffBase = Math.round(-rawDiff);
+    } else {
+      lDiffBase = Math.round(lAllowance-jAllowance);
+      jDiffBase = Math.round(jAllowance-lAllowance);
+    }
+    const lStrokeHoles = hardestHoleSet(r.holes, lDiffBase);
+    const jStrokeHoles = hardestHoleSet(r.holes, jDiffBase);
     holesHtml = r.holes.map((h,i)=>{
       const lv=m.holeScores.landon[i], jv=m.holeScores.josh[i];
       let rowClass='';
       if(lv!=null&&jv!=null){rowClass=lv<jv?'qs-hole-won-l':jv<lv?'qs-hole-won-j':'qs-hole-halved';}
-      const lDiff=Math.round(lAllowance-jAllowance), jDiff=Math.round(jAllowance-lAllowance);
-      const lStroke=lDiff>0&&h.hcp<=Math.min(lDiff,18)?1:0;
-      const jStroke=jDiff>0&&h.hcp<=Math.min(jDiff,18)?1:0;
+      const lStroke = lStrokeHoles.has(h.num) ? 1 : 0;
+      const jStroke = jStrokeHoles.has(h.num) ? 1 : 0;
       const lDot=lStroke>0?` <span class="qs-stroke-dot">+${lStroke}</span>`:'';
       const jDot=jStroke>0?` <span class="qs-stroke-dot">+${jStroke}</span>`:'';
       const strokeHl=(lStroke>0||jStroke>0)?' qs-stroke-hole':'';
