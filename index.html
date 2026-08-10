@@ -1932,6 +1932,8 @@ const POINTS_TO_WIN = TOTAL_POINTS / 2 + 0.5;
    unique within a round. */
 const TEAM_STROKE_OVERRIDES = {
   'r3:ben-dunford,ryan-hubrich': { landon: 0, josh: 0 },
+  'r1:grant-wilson,josh-pehrson': { landon: 1, josh: 0 },   // Landon Anderson & Ian Cahoon: 1 stroke (was 2)
+  'r1:jack-sargent,palmer-brophy': { landon: 0, josh: 1 },  // Palmer Brophy & Jack Sargent: 1 stroke (was 2)
 };
 function teamStrokeOverrideFor(round, m){
   const key = round.id + ':' + [...m.josh].sort().join(',');
