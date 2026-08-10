@@ -2259,12 +2259,21 @@ function computeMatchStatus(m, round){
   const totalHoles = round.holes.length;
   let landonWins = 0, joshWins = 0, holesPlayed = 0;
 
+  // Defensive: if a match's holeScores.landon/josh array is ever missing
+  // entirely (malformed save, mid-write race, etc.) rather than just
+  // containing nulls, treat it as "not started" instead of throwing. This
+  // function is called from nearly every view in the app (scoreboard,
+  // leaderboard, teams, win probability, battlefield, matchups) — one
+  // incomplete matchup anywhere must not be able to break all of them.
+  const landonScores = m.holeScores?.landon || [];
+  const joshScores = m.holeScores?.josh || [];
+
   // Scores are entered as NET (strokes already accounted for by whoever is
   // recording them), so hole results come straight from a direct comparison
   // — no further stroke adjustment here. The handicap allowance is only
   // used elsewhere to decide which holes to visually mark with a stroke dot.
   for(let i=0;i<totalHoles;i++){
-    const ls = m.holeScores.landon[i], js = m.holeScores.josh[i];
+    const ls = landonScores[i], js = joshScores[i];
     if(ls==null || js==null) continue;
     holesPlayed++;
     if(ls < js) landonWins++;
@@ -2677,6 +2686,7 @@ function isRoundComplete(r){
 }
 function renderBattlefield(){
   const html = ROUNDS.map(r=>{
+    try {
     const list = matchups[r.id];
     const active = list.filter(m => !computeMatchStatus(m, r).isFinal);
     const completed = list.filter(m => computeMatchStatus(m, r).isFinal);
@@ -2694,6 +2704,15 @@ function renderBattlefield(){
       ${list.length===0 ? `<div class="rformat">${r.format} format, played on the ${r.nine.toLowerCase()}</div>` : ''}
       ${body}
     </div>`;
+    } catch(e) {
+      console.error('Failed to render battlefield round', r.id, e);
+      return `
+      <div class="round-card reveal">
+        <div class="rtag"><span>${r.format} &middot; ${r.nine}</span></div>
+        <div class="rcourse">${escapeHtml(r.course)}</div>
+        <div class="tbd-note">Couldn't load this round's scores — check the console for details.</div>
+      </div>`;
+    }
   }).join('');
   document.getElementById('roundGrid').innerHTML = html;
 }
@@ -3341,16 +3360,21 @@ async function removeMatchup(roundId, index){
    scorecards, the live scoreboard + projection, the all-time History leaderboard,
    and the Teams page career records. Called any time a matchup is added, edited,
    removed, or reset, so a completed match folds into career win/loss/draw and a
-   clinched Cup folds into Team W-L everywhere on the site, instantly. */
+   clinched Cup folds into Team W-L everywhere on the site, instantly.
+
+   Each render runs in isolation — this function fires on every single score
+   entry throughout the whole event, so one bad render (unexpected data shape,
+   etc.) must not silently block every render after it in the list. */
 function refreshLiveData(){
-  renderBattlefield();
-  renderScoreboard();
-  renderLiveScoring();
-  updateCupProbStrip();
-  renderLiveLeaderboard();
-  renderLeaderboard();
-  renderTeams();
-  renderMatchups();
+  const safe = (name, fn) => { try{ fn(); } catch(e){ console.error(name + ' failed', e); } };
+  safe('renderBattlefield', renderBattlefield);
+  safe('renderScoreboard', renderScoreboard);
+  safe('renderLiveScoring', renderLiveScoring);
+  safe('updateCupProbStrip', updateCupProbStrip);
+  safe('renderLiveLeaderboard', renderLiveLeaderboard);
+  safe('renderLeaderboard', renderLeaderboard);
+  safe('renderTeams', renderTeams);
+  safe('renderMatchups', renderMatchups);
 }
 
 /* ========================= NAV ========================= */
