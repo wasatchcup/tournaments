@@ -1935,6 +1935,13 @@ const TEAM_STROKE_OVERRIDES = {
   'r1:grant-wilson,josh-pehrson': { landon: 1, josh: 0 },   // Landon Anderson & Ian Cahoon: 1 stroke (was 2)
   'r1:jack-sargent,palmer-brophy': { landon: 0, josh: 1 },  // Palmer Brophy & Jack Sargent: 1 stroke (was 2)
 };
+
+/* Official per-player Match Play (Round 4, singles) stroke overrides, same
+   reasoning as the other override tables above — the real number the
+   committee assigned differs from the 90%-of-difference formula. */
+const MATCH_PLAY_STROKE_OVERRIDES = {
+  'dillon-griffin': 2,
+};
 function teamStrokeOverrideFor(round, m){
   const key = round.id + ':' + [...m.josh].sort().join(',');
   return TEAM_STROKE_OVERRIDES[key];
@@ -2344,12 +2351,19 @@ function holeCellsFor(m, round, team, other){
   const scores = m.holeScores[team] || round.holes.map(()=>null);
   const otherScores = m.holeScores[other] || round.holes.map(()=>null);
 
-  // For Match Play, use individual hdcp directly at 85%
+  // For Match Play, use individual hdcp directly at 90%, unless overridden
   let diff;
   if(round.format === 'Match Play'){
-    const myHdcp  = PLAYERS[m[team][0]]?.hdcp ?? 0;
-    const oppHdcp = PLAYERS[m[other][0]]?.hdcp ?? 0;
-    diff = Math.round((myHdcp - oppHdcp) * 0.90);
+    const myId = m[team][0], oppId = m[other][0];
+    const myOverride = MATCH_PLAY_STROKE_OVERRIDES[myId];
+    const oppOverride = MATCH_PLAY_STROKE_OVERRIDES[oppId];
+    if(myOverride !== undefined || oppOverride !== undefined){
+      diff = (myOverride ?? 0) - (oppOverride ?? 0);
+    } else {
+      const myHdcp  = PLAYERS[myId]?.hdcp ?? 0;
+      const oppHdcp = PLAYERS[oppId]?.hdcp ?? 0;
+      diff = Math.round((myHdcp - oppHdcp) * 0.90);
+    }
   } else {
     const override = teamStrokeOverrideFor(round, m);
     if(override !== undefined){
@@ -3741,7 +3755,12 @@ function renderQsScoreEntry(){
   } else {
     const override = teamStrokeOverrideFor(r, m);
     let lDiffBase, jDiffBase;
-    if(override !== undefined){
+    if(r.format === 'Match Play' && (MATCH_PLAY_STROKE_OVERRIDES[m.landon[0]] !== undefined || MATCH_PLAY_STROKE_OVERRIDES[m.josh[0]] !== undefined)){
+      const lOv = MATCH_PLAY_STROKE_OVERRIDES[m.landon[0]] ?? 0;
+      const jOv = MATCH_PLAY_STROKE_OVERRIDES[m.josh[0]] ?? 0;
+      lDiffBase = lOv - jOv;
+      jDiffBase = jOv - lOv;
+    } else if(override !== undefined){
       lDiffBase = override.landon; jDiffBase = override.josh;
     } else if(r.format === 'Match Play'){
       // Match Play uses 90% of the individual handicap difference, not the
