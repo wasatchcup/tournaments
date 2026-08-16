@@ -1965,7 +1965,7 @@ function hardestHoleSet(holes, strokeCount){
    2. localStorage — scores persist on this device/browser when opened as a standalone file
    3. In-memory only — nothing persists (safeguard if both are unavailable) */
 let matchups = {r1:[], r2:[], r3:[], r4:[]};
-let authed = false;
+let authed = localStorage.getItem('wcAdminAuthed') === 'true';
 const ADMIN_PASSWORD = '2024';
 const QS_PASSWORD = '2026';
 /* ========================= FIREBASE REALTIME DATABASE ========================= */
@@ -3412,6 +3412,7 @@ function attemptLogin(){
   const val = document.getElementById('adminPass').value;
   if(val === ADMIN_PASSWORD){
     authed = true;
+    try { localStorage.setItem('wcAdminAuthed', 'true'); } catch(e){}
     document.getElementById('loginCard').style.display = 'none';
     document.getElementById('adminPanel').style.display = 'block';
     document.getElementById('loginError').style.display = 'none';
@@ -3422,10 +3423,16 @@ function attemptLogin(){
 }
 document.getElementById('logoutBtn').addEventListener('click', ()=>{
   authed = false;
+  try { localStorage.removeItem('wcAdminAuthed'); } catch(e){}
   document.getElementById('adminPass').value = '';
   document.getElementById('loginCard').style.display = 'block';
   document.getElementById('adminPanel').style.display = 'none';
 });
+// Already logged in from a previous visit (localStorage) — skip straight to the panel.
+if(authed){
+  document.getElementById('loginCard').style.display = 'none';
+  document.getElementById('adminPanel').style.display = 'block';
+}
 document.getElementById('publishBtn').addEventListener('click', async ()=>{
   // Grab current matchup data
   const snapshot = JSON.stringify(matchups);
@@ -3515,7 +3522,7 @@ updateCountdown();
 setInterval(updateCountdown, 1000);
 
 /* ========================= QUICK SCORE ========================= */
-let qsAuthed = false;
+let qsAuthed = localStorage.getItem('wcQsAuthed') === 'true';
 let qsSelectedRound = null;
 let qsSelectedIndex = null;
 
@@ -3551,6 +3558,7 @@ function renderQsAuth(){
   const attempt = ()=>{
     if(inp.value === QS_PASSWORD){
       qsAuthed = true;
+      try { localStorage.setItem('wcQsAuthed', 'true'); } catch(e){}
       document.getElementById('qsErr').style.display = 'none';
       renderQsRoundPicker();
     } else {
@@ -3850,6 +3858,7 @@ async function initApp(){
   safe('renderScoreboard', renderScoreboard);
   safe('updateCupProbStrip', updateCupProbStrip);
   safe('renderLiveScoring', renderLiveScoring);
+  safe('renderAdminIfAuthed', () => { if(authed){ renderRoundEditors(); renderHdcpEditor(); } });
   showPage('live');
   startPolling();
 }
