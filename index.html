@@ -2407,12 +2407,27 @@ function scorecardTableHtml(m, round){
   if(round.format === 'Match Play'){
     const lScores = m.holeScores.landon;
     const jScores = m.holeScores.josh;
-    const lHdcp = PLAYERS[m.landon[0]]?.hdcp ?? 0;
-    const jHdcp = PLAYERS[m.josh[0]]?.hdcp ?? 0;
-    // 85% of the difference — positive means that side receives strokes
-    const rawDiff = (lHdcp - jHdcp) * 0.90;
-    const lDiff = Math.round(rawDiff);  // positive = landon gets strokes
-    const jDiff = Math.round(-rawDiff); // positive = josh gets strokes
+    const lId = m.landon[0], jId = m.josh[0];
+    const lOverride = MATCH_PLAY_STROKE_OVERRIDES[lId];
+    const jOverride = MATCH_PLAY_STROKE_OVERRIDES[jId];
+    let lDiff, jDiff;
+    if(lOverride !== undefined || jOverride !== undefined){
+      lDiff = (lOverride ?? 0) - (jOverride ?? 0);
+      jDiff = (jOverride ?? 0) - (lOverride ?? 0);
+    } else {
+      const lHdcp = PLAYERS[lId]?.hdcp ?? 0;
+      const jHdcp = PLAYERS[jId]?.hdcp ?? 0;
+      // 90% of the difference — positive means that side receives strokes
+      const rawDiff = (lHdcp - jHdcp) * 0.90;
+      lDiff = Math.round(rawDiff);  // positive = landon gets strokes
+      jDiff = Math.round(-rawDiff); // positive = josh gets strokes
+    }
+    // Rank-based hole selection — always the N hardest holes on this nine,
+    // rather than testing hole.hcp <= N (which undercounts whenever this
+    // nine's HCP indices aren't a contiguous 1..N run, e.g. an even-only
+    // back nine).
+    const lStrokeHoles = hardestHoleSet(round.holes, lDiff);
+    const jStrokeHoles = hardestHoleSet(round.holes, jDiff);
 
     // Build hole-by-hole result and running score
     let running = 0; // positive = Landon leads, negative = Josh leads
@@ -2429,12 +2444,12 @@ function scorecardTableHtml(m, round){
     // Score cells
     const lCells = round.holes.map((h, i) => {
       const lv = lScores[i];
-      const dot = lDiff > 0 && h.hcp <= Math.min(lDiff,18) ? `<span class="ls-stroke-dot"></span>` : '';
+      const dot = lStrokeHoles.has(h.num) ? `<span class="ls-stroke-dot"></span>` : '';
       return `<td class="landon">${lv == null ? '&ndash;' : lv}${dot}</td>`;
     }).join('');
     const jCells = round.holes.map((h, i) => {
       const jv = jScores[i];
-      const dot = jDiff > 0 && h.hcp <= Math.min(jDiff,18) ? `<span class="ls-stroke-dot"></span>` : '';
+      const dot = jStrokeHoles.has(h.num) ? `<span class="ls-stroke-dot"></span>` : '';
       return `<td class="josh">${jv == null ? '&ndash;' : jv}${dot}</td>`;
     }).join('');
 
