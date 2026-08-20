@@ -481,6 +481,20 @@ button{font-family:inherit;cursor:pointer;}
 .mu-card-details summary{list-style:none;cursor:pointer;}
 .mu-card-details summary::-webkit-details-marker{display:none;}
 .mu-card-details .mu-card{border:none;border-radius:0;margin-bottom:0;background:transparent;}
+
+.captains-pick{
+  position:relative;
+  border:2px solid var(--gold) !important;
+  box-shadow:0 0 0 1px rgba(203,161,53,0.25), 0 0 18px rgba(203,161,53,0.18);
+}
+.captains-pick-badge{
+  position:absolute;top:-1px;right:12px;
+  background:var(--gold);color:var(--ink);
+  font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;
+  letter-spacing:0.08em;text-transform:uppercase;
+  padding:4px 9px 3px;border-radius:0 0 6px 6px;
+  z-index:2;
+}
 .mu-expand-hint{font-size:9px;color:var(--muted);margin-left:6px;text-transform:none;letter-spacing:0;}
 .mu-scorecard-drop{border-top:1px solid var(--hairline);padding:10px 8px;overflow-x:auto;}
 .mu-tee-time{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--gold);font-weight:700;margin-left:4px;text-transform:none;letter-spacing:0;}
@@ -1941,6 +1955,23 @@ const TEAM_STROKE_OVERRIDES = {
 /* Official per-player Match Play (Round 4, singles) stroke overrides, same
    reasoning as the other override tables above — the real number the
    committee assigned differs from the 90%-of-difference formula. */
+/* Captain's Favorite Match — one hand-picked match per round, highlighted
+   with a gold border wherever matches are shown (Live Battlefield + the
+   Matchups tab). Matching is by player set, not match order, so this still
+   works correctly even if pairings get reordered in Admin. */
+const CAPTAINS_FAVORITES = {
+  r1: { landon: ['mitchell-meyer','dillon-griffin'], josh: ['zac-cottrell','ben-dunford'] },
+  r2: { landon: ['cooper-atkinson','tom-rhodes'], josh: ['ryan-hubrich','palmer-brophy'] },
+  r3: { landon: ['landon-anderson','cam-howe'], josh: ['josh-pehrson','brendan-thomas'] },
+  r4: { landon: ['cooper-atkinson'], josh: ['palmer-brophy'] },
+};
+function isCaptainsFavorite(roundId, m){
+  const fav = CAPTAINS_FAVORITES[roundId];
+  if(!fav || !m.landon || !m.josh) return false;
+  const sameSet = (a, b) => a.length === b.length && a.every(x => b.includes(x));
+  return sameSet(m.landon, fav.landon) && sameSet(m.josh, fav.josh);
+}
+
 const MATCH_PLAY_STROKE_OVERRIDES = {
   'dillon-griffin': 2,
   'palmer-brophy': 2,
@@ -2662,6 +2693,7 @@ function battlefieldMatchHtml(m, round){
   const st = computeMatchStatus(m, round);
   const lName = escapeHtml(namesFor(m.landon));
   const jName = escapeHtml(namesFor(m.josh));
+  const isFave = isCaptainsFavorite(round.id, m);
 
   // Status badge
   const statusBadge = st.isFinal
@@ -2690,7 +2722,7 @@ function battlefieldMatchHtml(m, round){
   const as = st.leader === 'allsquare' || st.holesPlayed === 0;
 
   return `
-  <details class="completed-match">
+  <details class="completed-match${isFave ? ' captains-pick' : ''}">
     <summary>
       <div class="bf-card-inner">
         <div class="bf-top-row">${statusBadge}<span class="bf-format-tag">${round.format}</span></div>
@@ -2707,6 +2739,7 @@ function battlefieldMatchHtml(m, round){
         </div>
       </div>
     </summary>
+    ${isFave ? `<span class="captains-pick-badge">★ Captain's Pick</span>` : ''}
     <div class="cm-body">${scorecardTableHtml(m, round)}</div>
   </details>`;
 }
@@ -2846,8 +2879,9 @@ function renderMatchups(){
       };
       const teeTime = r.id==='r1' ? fmtTee(8,0,i) : r.id==='r3' ? fmtTee(14,15,i) : null;
       const teeTag = teeTime ? `<span class="mu-tee-time">⏱ ${teeTime}</span>` : '';
+      const isFave = isCaptainsFavorite(r.id, m);
 
-      return `<details class="mu-card-details">
+      return `<details class="mu-card-details${isFave ? ' captains-pick' : ''}">
         <summary class="mu-card">
           <div class="mu-match-label">Match ${i+1} ${teeTag} <span class="mu-expand-hint">tap for scorecard ▾</span></div>
           <div class="mu-vs-row">
@@ -2856,6 +2890,7 @@ function renderMatchups(){
             ${mkSide(m.josh,'j')}
           </div>
         </summary>
+        ${isFave ? `<span class="captains-pick-badge">★ Captain's Pick</span>` : ''}
         <div class="mu-scorecard-drop">${scorecardTableHtml(m, r)}</div>
       </details>`;
     }).join('');
