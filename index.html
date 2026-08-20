@@ -2089,6 +2089,41 @@ async function loadMatchupsFromStorage(){
   return {r1:[], r2:[], r3:[], r4:[]};
 }
 
+/* Writes ONLY the single match at matchups[roundId][index] to Firebase,
+   instead of overwriting the entire matchups tree. This is what Quick Score
+   uses, since many people may be entering scores for different matches at
+   the same time — a whole-object save would risk one person's stale local
+   copy silently reverting another match that someone else just updated.
+   Firebase's REST API lets us PUT directly to a nested path, so writing
+   matchups/r1/2 only ever touches that one match; every other match is
+   completely untouched regardless of what this device's local copy of them
+   currently looks like. */
+async function saveSingleMatchToStorage(roundId, index){
+  try{
+    const matchData = matchups[roundId][index];
+    const url = FB_URL.replace('/matchups.json', `/matchups/${roundId}/${index}.json`);
+    console.log('Saving single match to Firebase...', roundId, index);
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(matchData)
+    });
+    console.log('Firebase single-match save status:', res.status);
+    if(!res.ok){
+      const text = await res.text();
+      console.error('Firebase single-match save failed:', res.status, text);
+      alert('Score save failed (' + res.status + '): ' + text);
+      return false;
+    }
+    console.log('Firebase single-match save success!');
+    return true;
+  } catch(e){
+    console.error('Firebase single-match save error:', e);
+    alert('Score save error: ' + e.message);
+    return false;
+  }
+}
+
 async function saveMatchupsToStorage(){
   try{
     console.log('Saving to Firebase...', JSON.stringify(matchups).substring(0, 100));
@@ -3900,7 +3935,7 @@ function renderQsScoreEntry(){
     matchups[qsSelectedRound][qsSelectedIndex].holeScores=collectQsScores();
     refreshLiveData();
     if(authed) renderRoundEditors();
-    await saveMatchupsToStorage();
+    await saveSingleMatchToStorage(qsSelectedRound, qsSelectedIndex);
     const flash=document.getElementById('qsSavedFlash');
     flash.classList.add('show');
     setTimeout(()=>flash.classList.remove('show'),2000);
