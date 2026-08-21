@@ -1235,7 +1235,7 @@ button{font-family:inherit;cursor:pointer;}
 .qs-score-input::-webkit-outer-spin-button,.qs-score-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 .qs-score-input:focus{outline:none;border-color:var(--gold);background:var(--ink-2);color:var(--gold);}
 .qs-score-input.filled{border-color:var(--landon);background:var(--ink-2);}
-.qs-score-cell:last-child .qs-score-input.filled{border-color:var(--josh);}
+.qs-score-cell-j .qs-score-input.filled{border-color:var(--josh);}
 .qs-stroke-hole{background:rgba(255,210,80,0.08);border-radius:12px;}
 .qs-stroke-dot{font-size:9px;color:var(--gold);font-weight:700;letter-spacing:0;margin-left:2px;}
 .qs-live-status{
@@ -3841,7 +3841,7 @@ function renderQsScoreEntry(){
         const key = side+p;
         const dots = strokesByKey[key] > 0 && holeSetsByKey[key].has(h.num) ? 1 : 0;
         const strokeDot=dots>0?` <span class="qs-stroke-dot">+${dots}</span>`:'';
-        return `<div class="qs-score-cell"><label class="${side}">${(side==='l'?lNames:jNames)[p].split(' ')[0]}${strokeDot}</label><input class="qs-score-input${v!=null?' filled':''}" type="number" min="1" max="15" inputmode="numeric" pattern="[0-9]*" id="qsi-${side}${p}-${i}" value="${v!=null?v:''}" placeholder="–"></div>`;
+        return `<div class="qs-score-cell qs-score-cell-${side}"><label class="${side}">${(side==='l'?lNames:jNames)[p].split(' ')[0]}${strokeDot}</label><input class="qs-score-input${v!=null?' filled':''}" type="number" min="1" max="15" inputmode="numeric" pattern="[0-9]*" id="qsi-${side}${p}-${i}" value="${v!=null?v:''}" placeholder="–"></div>`;
       };
       const strokeHl = Object.keys(holeSetsByKey).some(k => holeSetsByKey[k].has(h.num)) ? ' qs-stroke-hole' : '';
       return `<div class="qs-hole-row qs-hole-row-bb ${rowClass}${strokeHl}" id="qshr-${i}"><div class="qs-hole-label">H${h.num}<span>Par ${h.par}</span></div>${mkInp('l',0,lp[0][i])}${mkInp('l',1,lp[1][i])}${mkInp('j',0,jp[0][i])}${mkInp('j',1,jp[1][i])}</div>`;
@@ -3879,7 +3879,7 @@ function renderQsScoreEntry(){
       const lDot=lStroke>0?` <span class="qs-stroke-dot">+${lStroke}</span>`:'';
       const jDot=jStroke>0?` <span class="qs-stroke-dot">+${jStroke}</span>`:'';
       const strokeHl=(lStroke>0||jStroke>0)?' qs-stroke-hole':'';
-      return `<div class="qs-hole-row ${rowClass}${strokeHl}" id="qshr-${i}"><div class="qs-hole-label">H${h.num}<span>Par ${h.par}</span></div><div class="qs-score-cell"><label class="l">${namesFor(m.landon).split(' ')[0]}${lDot}</label><input class="qs-score-input${lv!=null?' filled':''}" type="number" min="1" max="15" inputmode="numeric" pattern="[0-9]*" id="qsi-l-${i}" value="${lv!=null?lv:''}" placeholder="–"></div><div class="qs-score-cell"><label class="j">${namesFor(m.josh).split(' ')[0]}${jDot}</label><input class="qs-score-input${jv!=null?' filled':''}" type="number" min="1" max="15" inputmode="numeric" pattern="[0-9]*" id="qsi-j-${i}" value="${jv!=null?jv:''}" placeholder="–"></div></div>`;
+      return `<div class="qs-hole-row ${rowClass}${strokeHl}" id="qshr-${i}"><div class="qs-hole-label">H${h.num}<span>Par ${h.par}</span></div><div class="qs-score-cell qs-score-cell-l"><label class="l">${namesFor(m.landon).split(' ')[0]}${lDot}</label><input class="qs-score-input${lv!=null?' filled':''}" type="number" min="1" max="15" inputmode="numeric" pattern="[0-9]*" id="qsi-l-${i}" value="${lv!=null?lv:''}" placeholder="–"></div><div class="qs-score-cell qs-score-cell-j"><label class="j">${namesFor(m.josh).split(' ')[0]}${jDot}</label><input class="qs-score-input${jv!=null?' filled':''}" type="number" min="1" max="15" inputmode="numeric" pattern="[0-9]*" id="qsi-j-${i}" value="${jv!=null?jv:''}" placeholder="–"></div></div>`;
     }).join('');
   }
 
