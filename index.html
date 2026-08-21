@@ -1322,7 +1322,10 @@ button{font-family:inherit;cursor:pointer;}
 <script>
 (function(){
   var PASSWORD    = '0403';
-  var MATCHUPS_AT = new Date(2026, 7, 23, 18, 30, 0).getTime();  // Aug 23, 2026 6:30 PM
+  // Aug 21, 2026, 7:00 PM Mountain Time (MDT, UTC-6 in August) = Aug 22, 01:00 UTC.
+  // Anchored to a fixed UTC instant (not the visitor's local clock) so it reveals
+  // at 7pm Mountain Time for everyone, no matter what timezone they're viewing from.
+  var MATCHUPS_AT = Date.UTC(2026, 7, 22, 1, 0, 0);
   var LIVE_AT     = new Date(2026, 7, 29,  8,  0, 0).getTime();  // Aug 29, 2026 8:00 AM (first tee)
 
   var gates = {
@@ -1569,7 +1572,7 @@ button{font-family:inherit;cursor:pointer;}
       <div id="matchupsGate" style="display:none;">
         <div class="section-gate">
           <div class="section-gate-eyebrow">Matchups Revealed</div>
-          <h2 class="section-gate-title">August 23 &middot; 6:30 PM</h2>
+          <h2 class="section-gate-title">Tonight &middot; 7:00 PM MST</h2>
           <div class="section-gate-countdown" id="revealCountdown">
             <div class="rc-unit"><span class="rc-num" id="rcDays">00</span><span class="rc-label">Days</span></div>
             <div class="rc-unit"><span class="rc-num" id="rcHours">00</span><span class="rc-label">Hours</span></div>
