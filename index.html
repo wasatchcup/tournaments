@@ -1036,6 +1036,12 @@ button{font-family:inherit;cursor:pointer;}
   background:none;border:none;color:var(--muted);font-size:12px;font-family:'JetBrains Mono',monospace;
 }
 .existing-matchups .em-edit:hover{color:var(--gold);}
+.existing-matchups .em-move{
+  background:none;border:none;color:var(--muted);font-size:14px;font-family:'JetBrains Mono',monospace;
+  padding:0 2px;cursor:pointer;
+}
+.existing-matchups .em-move:hover:not(:disabled){color:var(--gold);}
+.existing-matchups .em-move:disabled{color:var(--hairline);cursor:default;opacity:0.4;}
 .existing-matchups .em-remove{
   background:none;border:none;color:var(--muted);font-size:12px;font-family:'JetBrains Mono',monospace;
 }
@@ -3247,6 +3253,8 @@ function renderRoundEditors(){
         <div class="em-row">
           <span>${teeTag}<span style="color:var(--landon)">${escapeHtml(namesFor(m.landon))}</span> vs <span style="color:var(--josh)">${escapeHtml(namesFor(m.josh))}</span> &middot; ${resultLabel(m, r)}</span>
           <span class="em-actions">
+            <button class="em-move" data-round="${r.id}" data-index="${i}" data-dir="-1" ${i===0?'disabled':''} title="Move up">↑</button>
+            <button class="em-move" data-round="${r.id}" data-index="${i}" data-dir="1" ${i===list.length-1?'disabled':''} title="Move down">↓</button>
             <button class="em-edit" data-round="${r.id}" data-index="${i}">Edit</button>
             <button class="em-remove" data-round="${r.id}" data-index="${i}">Remove</button>
           </span>
@@ -3284,6 +3292,9 @@ function renderRoundEditors(){
 
   document.querySelectorAll('.add-matchup-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>addMatchup(btn.dataset.round));
+  });
+  document.querySelectorAll('.em-move').forEach(btn=>{
+    btn.addEventListener('click', ()=>moveMatchup(btn.dataset.round, parseInt(btn.dataset.index,10), parseInt(btn.dataset.dir,10)));
   });
   document.querySelectorAll('.em-remove').forEach(btn=>{
     btn.addEventListener('click', ()=>removeMatchup(btn.dataset.round, parseInt(btn.dataset.index,10)));
@@ -3460,6 +3471,15 @@ async function editMatchup(roundId, index){
 }
 async function removeMatchup(roundId, index){
   matchups[roundId].splice(index,1);
+  renderRoundEditors();
+  refreshLiveData();
+  await saveMatchupsToStorage();
+}
+async function moveMatchup(roundId, index, dir){
+  const list = matchups[roundId];
+  const targetIndex = index + dir;
+  if(targetIndex < 0 || targetIndex >= list.length) return;
+  [list[index], list[targetIndex]] = [list[targetIndex], list[index]];
   renderRoundEditors();
   refreshLiveData();
   await saveMatchupsToStorage();
