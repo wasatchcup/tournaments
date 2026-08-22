@@ -65,59 +65,6 @@ button{font-family:inherit;cursor:pointer;}
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* ===================== SECTION GATES ===================== */
-.section-gate{
-  max-width:460px;margin:0 auto 40px;text-align:center;
-  padding:40px 28px;
-  background:var(--ink-1);
-  border:1px solid rgba(203,161,53,0.25);
-  border-radius:18px;
-}
-.section-gate-eyebrow{
-  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.22em;
-  text-transform:uppercase;color:var(--gold);margin-bottom:10px;
-}
-.section-gate-title{
-  font-family:'Anton',sans-serif;text-transform:uppercase;letter-spacing:0.02em;
-  font-size:clamp(24px,6vw,34px);color:var(--parchment);line-height:1.05;margin-bottom:12px;
-}
-.section-gate-sub{
-  font-size:13px;color:var(--parchment-dim,#B9B2A3);line-height:1.5;
-  margin:0 auto 26px;max-width:330px;
-}
-.section-gate-countdown{
-  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:22px 0 28px;
-}
-.rc-unit{
-  background:var(--ink-2);border:1px solid rgba(255,255,255,0.06);border-radius:10px;
-  padding:12px 4px;
-}
-.rc-num{
-  display:block;font-family:'Anton',sans-serif;font-size:clamp(20px,5vw,28px);color:var(--gold);
-  font-variant-numeric:tabular-nums;
-}
-.rc-label{
-  display:block;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.12em;
-  text-transform:uppercase;color:#8A8578;margin-top:4px;
-}
-.section-gate-form{ display:flex;gap:8px; }
-.section-gate-input{
-  flex:1;min-width:0;
-  background:var(--ink-2);border:1px solid rgba(255,255,255,0.12);border-radius:8px;
-  color:var(--parchment);font-family:'JetBrains Mono',monospace;font-size:15px;letter-spacing:0.1em;
-  padding:12px 14px;text-align:center;
-}
-.section-gate-input:focus{ outline:none;border-color:var(--gold); }
-.section-gate-btn{
-  font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;
-  background:var(--gold);color:var(--ink);border:none;border-radius:8px;padding:0 20px;
-  cursor:pointer;font-weight:700;
-}
-.section-gate-btn:hover{ opacity:0.9; }
-.section-gate-error{
-  margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#D97A6C;
-}
-
 .eyebrow{
   font-family:'JetBrains Mono',monospace;
   font-size:12px;
@@ -1327,103 +1274,6 @@ button{font-family:inherit;cursor:pointer;}
 
 <div class="grain"></div>
 
-<script>
-(function(){
-  var PASSWORD    = '0403';
-  // Aug 21, 2026, 7:00 PM Mountain Time (MDT, UTC-6 in August) = Aug 22, 01:00 UTC.
-  // Anchored to a fixed UTC instant (not the visitor's local clock) so it reveals
-  // at 7pm Mountain Time for everyone, no matter what timezone they're viewing from.
-  var MATCHUPS_AT = Date.UTC(2026, 7, 22, 1, 0, 0);
-  var LIVE_AT     = new Date(2026, 7, 29,  8,  0, 0).getTime();  // Aug 29, 2026 8:00 AM (first tee)
-
-  var gates = {
-    matchups: { key:'wcUnlockMatchups2026', at:MATCHUPS_AT, gate:'matchupsGate', content:'matchupsGated' },
-    live:     { key:'wcUnlockLive2026',     at:LIVE_AT,     gate:'liveGate',     content:'liveGated' }
-  };
-
-  function isUnlocked(g){
-    if(Date.now() >= g.at) return true;
-    try { return localStorage.getItem(g.key) === 'true'; } catch(e){ return false; }
-  }
-
-  function apply(name){
-    var g = gates[name];
-    var gateEl = document.getElementById(g.gate);
-    var contentEl = document.getElementById(g.content);
-    if(!gateEl || !contentEl) return;
-    var open = isUnlocked(g);
-    gateEl.style.display    = open ? 'none'  : '';
-    contentEl.style.display = open ? ''      : 'none';
-  }
-
-  function unlockAll(){
-    for(var n in gates){
-      try { localStorage.setItem(gates[n].key, 'true'); } catch(e){}
-      apply(n);
-    }
-  }
-
-  function init(){
-  Object.keys(gates).forEach(apply);
-
-  // Password unlocks BOTH sections at once — one password, whole site.
-  document.addEventListener('submit', function(e){
-    var form = e.target.closest ? e.target.closest('[data-gate-form]') : null;
-    if(!form) return;
-    e.preventDefault();
-    var input = form.querySelector('.section-gate-input');
-    var err = form.parentNode.querySelector('.section-gate-error');
-    if(input && input.value.trim() === PASSWORD){
-      if(err) err.style.display = 'none';
-      unlockAll();
-    } else {
-      if(err) err.style.display = 'block';
-      if(input){ input.value=''; input.focus(); }
-    }
-  });
-
-  // Countdown to the matchups reveal
-  function pad(n){ return String(n).padStart(2,'0'); }
-  var els = {
-    d: document.getElementById('rcDays'), h: document.getElementById('rcHours'),
-    m: document.getElementById('rcMins'), s: document.getElementById('rcSecs')
-  };
-  if(els.d){
-    var timer = setInterval(function tick(){
-      var left = MATCHUPS_AT - Date.now();
-      if(left <= 0){ clearInterval(timer); apply('matchups'); return; }
-      var t = Math.floor(left/1000);
-      els.d.textContent = pad(Math.floor(t/86400));
-      els.h.textContent = pad(Math.floor((t%86400)/3600));
-      els.m.textContent = pad(Math.floor((t%3600)/60));
-      els.s.textContent = pad(t%60);
-    }, 1000);
-    (function(){
-      var left = MATCHUPS_AT - Date.now(), t = Math.floor(left/1000);
-      if(left > 0){
-        els.d.textContent = pad(Math.floor(t/86400));
-        els.h.textContent = pad(Math.floor((t%86400)/3600));
-        els.m.textContent = pad(Math.floor((t%3600)/60));
-        els.s.textContent = pad(t%60);
-      }
-    })();
-  }
-
-  // Live section unlocks itself the moment the first group tees off
-  if(!isUnlocked(gates.live)){
-    setInterval(function(){ if(Date.now() >= LIVE_AT) apply('live'); }, 1000);
-  }
-  }
-
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-})();
-</script>
-
-
 
 <header class="topnav">
   <div class="topnav-inner">
@@ -1465,19 +1315,6 @@ button{font-family:inherit;cursor:pointer;}
         </div>
         <h1 class="hero-tagline">WHERE THE MOUNTAINS DIVIDE, <span class="accent">CHAMPIONS UNITE.</span></h1>
         <div class="eyebrow hero-eyebrow hero-eyebrow-bottom">EST. 2024 &middot; 16 PLAYERS. 2 TEAMS. 1 CUP.</div>
-      </div>
-    </div>
-
-    <div class="wrap" id="liveGate" style="display:none;">
-      <div class="section-gate">
-        <div class="section-gate-eyebrow">Locked</div>
-        <h2 class="section-gate-title">Live Scoring</h2>
-        <p class="section-gate-sub">Scores go live when the first group tees off on August 29. The countdown above is ticking.</p>
-        <form class="section-gate-form" data-gate-form="live" autocomplete="off">
-          <input type="password" class="section-gate-input" placeholder="Password" inputmode="numeric">
-          <button type="submit" class="section-gate-btn">Unlock</button>
-        </form>
-        <div class="section-gate-error" style="display:none;">Incorrect password — try again.</div>
       </div>
     </div>
 
@@ -1576,24 +1413,6 @@ button{font-family:inherit;cursor:pointer;}
       <div class="eyebrow">2026 Wasatch Cup</div>
       <h2 class="section-title" style="font-family:'Anton',sans-serif;font-size:clamp(28px,8vw,52px);text-transform:uppercase;letter-spacing:0.03em;">Today's Matchups</h2>
       <p style="color:var(--muted);font-size:14px;margin-bottom:28px;">August 29, 2026 · Davis Park &amp; Valley View</p>
-
-      <div id="matchupsGate" style="display:none;">
-        <div class="section-gate">
-          <div class="section-gate-eyebrow">Matchups Revealed</div>
-          <h2 class="section-gate-title">Tonight &middot; 7:00 PM MST</h2>
-          <div class="section-gate-countdown" id="revealCountdown">
-            <div class="rc-unit"><span class="rc-num" id="rcDays">00</span><span class="rc-label">Days</span></div>
-            <div class="rc-unit"><span class="rc-num" id="rcHours">00</span><span class="rc-label">Hours</span></div>
-            <div class="rc-unit"><span class="rc-num" id="rcMins">00</span><span class="rc-label">Min</span></div>
-            <div class="rc-unit"><span class="rc-num" id="rcSecs">00</span><span class="rc-label">Sec</span></div>
-          </div>
-          <form class="section-gate-form" data-gate-form="matchups" autocomplete="off">
-            <input type="password" class="section-gate-input" placeholder="Password" inputmode="numeric">
-            <button type="submit" class="section-gate-btn">Unlock</button>
-          </form>
-          <div class="section-gate-error" style="display:none;">Incorrect password — try again.</div>
-        </div>
-      </div>
 
       <div id="matchupsGated"><div id="matchupsBody"></div></div>
     </div>
@@ -2021,7 +1840,7 @@ function hardestHoleSet(holes, strokeCount){
    3. In-memory only — nothing persists (safeguard if both are unavailable) */
 let matchups = {r1:[], r2:[], r3:[], r4:[]};
 let authed = localStorage.getItem('wcAdminAuthed') === 'true';
-const ADMIN_PASSWORD = '2024';
+const ADMIN_PASSWORD = '0403';
 const QS_PASSWORD = '2026';
 /* ========================= FIREBASE REALTIME DATABASE ========================= */
 const FB_URL = 'https://wasatch-cup-default-rtdb.firebaseio.com/matchups.json';
