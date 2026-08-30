@@ -2835,14 +2835,27 @@ function updateCupProbStrip(){
 
   if(!anyAction){ strip.style.display='none'; return; }
 
-  /* Convert expected totals to a Cup win probability.
-     Uses a logistic curve: the further ahead in expected points, the higher
-     the probability, scaled so that being up ~3 points = ~80% favourite. */
-  const diff = expL - expJ;
-  const scale = 0.55; /* controls how fast prob moves — tune if needed */
-  const rawP = 1 / (1 + Math.exp(-diff * scale));
-  const pctL = Math.round(rawP * 100);
-  const pctJ = 100 - pctL;
+  /* Once every match in the Cup is final, the outcome carries zero remaining
+     uncertainty — show a clean 100/0 (or 50/50 in the rare exact-tie case)
+     instead of running the final score through the same logistic curve used
+     for in-progress estimates, which would understate a locked-in result. */
+  const tournamentComplete = totalMatches === TOTAL_POINTS && ROUNDS.every(r =>
+    matchups[r.id].every(m => computeMatchStatus(m, r).isFinal)
+  );
+  let pctL, pctJ;
+  if(tournamentComplete){
+    pctL = expL > expJ ? 100 : expL < expJ ? 0 : 50;
+    pctJ = 100 - pctL;
+  } else {
+    /* Convert expected totals to a Cup win probability.
+       Uses a logistic curve: the further ahead in expected points, the higher
+       the probability, scaled so that being up ~3 points = ~80% favourite. */
+    const diff = expL - expJ;
+    const scale = 0.55; /* controls how fast prob moves — tune if needed */
+    const rawP = 1 / (1 + Math.exp(-diff * scale));
+    pctL = Math.round(rawP * 100);
+    pctJ = 100 - pctL;
+  }
 
   const fillColor = pctL > pctJ ? 'var(--landon)' : pctJ > pctL ? 'var(--josh)' : 'var(--muted)';
   document.getElementById('cupProbL').textContent = pctL + '%';
@@ -2904,6 +2917,15 @@ function renderLiveScoring(){
   const wrap = document.getElementById('liveScoringWrap');
   const all = collectAllMatches();
 
+  /* Once every match in the Cup is final, there's nothing "live" left to show —
+     hide this section entirely rather than relying on each round's individual
+     transition logic below to correctly clear itself. */
+  const tournamentComplete = all.length === TOTAL_POINTS && all.every(x => x.st.isFinal);
+  if(tournamentComplete){
+    wrap.style.display = 'none';
+    return;
+  }
+
   /* Feature: don't show a match in Live Now until at least one score is entered */
   const active = all.filter(x => !x.st.isFinal && x.st.holesPlayed > 0);
 
@@ -2915,16 +2937,19 @@ function renderLiveScoring(){
   const completedR1 = r2AllStarted ? [] : all.filter(x => x.r.id === 'r1' && x.st.isFinal);
 
   /* Valley View (r3 = Scramble Front 9):
-     Keep a completed r3 match visible until the SAME players' r4 match has a score entered. */
+     Keep a completed r3 match visible until any of its 4 players has started
+     their individual r4 (Match Play) match. Match Play reshuffles players into
+     new 1-on-1 pairings, so we can't match by "same team" like r1/r2 — instead
+     check whether any of these 4 players shows up with holes played in r4. */
   const completedR3 = all.filter(x => {
     if(x.r.id !== 'r3' || !x.st.isFinal) return false;
-    const r4match = matchups.r4.find(m4 => {
-      const sameL = x.m.landon.length === m4.landon.length && x.m.landon.every(p => m4.landon.includes(p));
-      const sameJ = x.m.josh.length === m4.josh.length && x.m.josh.every(p => m4.josh.includes(p));
-      return sameL && sameJ;
+    const playersInMatch = [...x.m.landon, ...x.m.josh];
+    const anyStartedR4 = matchups.r4.some(m4 => {
+      const m4Players = [...m4.landon, ...m4.josh];
+      const overlaps = m4Players.some(p => playersInMatch.includes(p));
+      return overlaps && computeMatchStatus(m4, ROUNDS_BY_ID['r4']).holesPlayed > 0;
     });
-    if(!r4match) return true; // no r4 yet, keep showing
-    return computeMatchStatus(r4match, ROUNDS_BY_ID['r4']).holesPlayed === 0;
+    return !anyStartedR4; // keep showing until any of these players' r4 match has started
   });
 
   const completedForLive = [...completedR1, ...completedR3];
