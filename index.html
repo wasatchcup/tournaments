@@ -1938,6 +1938,22 @@ const ARCHIVE_2025_MATCHES = [
   {round:'matchplay', teamA:['cooper-atkinson'], teamB:['ryan-hubrich'], result:'tie', margin:'Halved'},
 ];
 
+/* 2024 archive — no round-by-round or match-level detail exists for this
+   season, only each player's final W-L-D record, worked out by taking the
+   real all-time totals and subtracting the verified 2025 and 2026 archives.
+   Every one of the 8 players who competed lands on exactly 4 matches played,
+   which is a good sign this reconciled correctly. */
+const ARCHIVE_2024_STATS = {
+  'cooper-atkinson': {w:4, l:0, d:0},
+  'josh-pehrson': {w:3, l:1, d:0},
+  'landon-anderson': {w:2, l:2, d:0},
+  'mitchell-meyer': {w:2, l:2, d:0},
+  'john-cook': {w:2, l:2, d:0},
+  'zac-cottrell': {w:1, l:3, d:0},
+  'ryan-hubrich': {w:1, l:3, d:0},
+  'tom-rhodes': {w:1, l:3, d:0},
+};
+
 const ROUNDS = [
   {id:'r1', course:'Davis Park Golf Course', format:'Chapman',    nine:'Front 9',
     holes:[{num:1,par:4,hcp:14},{num:2,par:3,hcp:10},{num:3,par:5,hcp:16},{num:4,par:4,hcp:6},
@@ -2359,6 +2375,29 @@ function build2025ExtrasHtml(){
   return `<div class="champ-extras">${leaderboardHtml}${breakdownHtml}</div>`;
 }
 
+/* 2024's version — only a final player leaderboard, since no round-level or
+   match-level detail exists for this season, only each player's final W-L-D.
+   Worked out by taking real all-time totals and subtracting the verified
+   2025 and 2026 archives; every one of the 8 players who played lands on
+   exactly 4 matches, which was a good internal-consistency signal. */
+function build2024ExtrasHtml(){
+  const rows = Object.keys(ARCHIVE_2024_STATS).map(id=>{
+    const s = ARCHIVE_2024_STATS[id];
+    const pf = s.w + s.d*0.5, pa = s.l + s.d*0.5;
+    return {id, name:PLAYERS[id].name, photo:PLAYERS[id].photo, w:s.w, l:s.l, d:s.d, pf, pm:pf-pa};
+  });
+  rows.sort((a,b)=> b.pm - a.pm || b.w - a.w);
+  const leaderboardHtml = `
+    <div class="champ-extra-sub">2024 player leaderboard</div>
+    <div class="p-row head"><div>#</div><div></div><div>Golfer</div><div style="text-align:center">Record</div><div style="text-align:center">PF</div><div style="text-align:center">+/-</div></div>
+    ${rows.map((r,i)=>{
+      const pmCls = r.pm > 0 ? 'pos' : r.pm < 0 ? 'neg' : 'zero';
+      const pmText = r.pm > 0 ? '+'+r.pm : r.pm;
+      return `<div class="p-row"><div class="p-rank">${i+1}</div><img class="p-photo" src="${r.photo}"><div class="p-name">${escapeHtml(r.name)}</div><div class="p-wld">${r.w}-${r.l}-${r.d}</div><div class="p-team">${r.pf}</div><div class="p-pm ${pmCls}">${pmText}</div></div>`;
+    }).join('')}`;
+  return `<div class="champ-extras">${leaderboardHtml}</div>`;
+}
+
 function renderChampions(targetId){
   targetId = targetId || 'championsStrip';
   const ordered = CHAMPIONS.slice().reverse();
@@ -2374,6 +2413,11 @@ function renderChampions(targetId){
       extrasBlock = `
       <button class="champ-dropdown-toggle" data-champtoggle="${dropdownId}">See how the ${c.year} Cup was decided &#9662;</button>
       <div class="champ-dropdown" id="${dropdownId}" style="display:none;">${build2025ExtrasHtml()}</div>`;
+    } else if(c.year === 2024){
+      const dropdownId = 'champDropdown-'+c.year;
+      extrasBlock = `
+      <button class="champ-dropdown-toggle" data-champtoggle="${dropdownId}">See the ${c.year} player leaderboard &#9662;</button>
+      <div class="champ-dropdown" id="${dropdownId}" style="display:none;">${build2024ExtrasHtml()}</div>`;
     }
     return `
     <div class="champ-card ${isCurrent?'current':''} reveal">
