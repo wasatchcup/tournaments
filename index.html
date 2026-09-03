@@ -188,6 +188,10 @@ button{font-family:inherit;cursor:pointer;}
   font-family:'Anton',sans-serif;font-size:clamp(40px,11vw,68px);color:var(--gold);
   letter-spacing:0.01em;line-height:1;margin-top:8px;font-variant-numeric:tabular-nums;
 }
+.ncb-message{
+  font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--parchment-dim);
+  text-align:center;line-height:1.6;margin-top:14px;max-width:400px;
+}
 .hero-status{
   display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;
   max-width:880px;margin:0 auto;
@@ -1017,6 +1021,22 @@ button{font-family:inherit;cursor:pointer;}
 .login-note{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.5;}
 .login-error{color:var(--red);font-size:12.5px;margin-top:10px;display:none;}
 
+.page-lock-wrap{padding:40px 0 60px;}
+.page-lock-card{
+  max-width:380px;margin:0 auto;text-align:center;
+  background:var(--ink-1);border:1px solid var(--hairline);border-radius:var(--radius);
+  padding:30px;
+}
+.page-lock-label{font-size:14px;color:var(--parchment-dim);margin-bottom:18px;line-height:1.5;}
+.page-lock-input{
+  width:100%;background:var(--ink-2);border:1px solid var(--hairline);border-radius:var(--radius-sm);
+  padding:11px 12px;color:var(--parchment);font-size:14px;font-family:'Inter',sans-serif;
+  margin-bottom:14px;text-align:center;
+}
+.page-lock-input:focus{outline:2px solid var(--gold);outline-offset:1px;}
+.page-lock-btn{width:100%;}
+.page-lock-error{color:var(--red);font-size:12.5px;margin-top:10px;display:none;}
+
 .admin-banner{
   display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
   background:var(--ink-1);border:1px solid var(--hairline);border-radius:var(--radius);
@@ -1365,10 +1385,20 @@ button{font-family:inherit;cursor:pointer;}
         <div class="ncb-eyebrow">2027 Wasatch Cup</div>
         <div class="ncb-date">August 28, 2027</div>
         <div class="ncb-countdown" id="ncbCountdown">&ndash;&ndash;d &ndash;&ndash;h &ndash;&ndash;m &ndash;&ndash;s</div>
+        <div class="ncb-message">2027 is in the works! Thank you for your participation in the 2026 Cup! More information soon!</div>
       </div>
     </div>
 
-    <div id="liveGated">
+    <div class="wrap page-lock-wrap" id="pageLockWrap-live">
+      <div class="page-lock-card">
+        <div class="page-lock-label">This page is locked while 2027 is being planned</div>
+        <input type="password" class="page-lock-input" placeholder="Enter access code" data-lockinput>
+        <button class="btn btn-gold page-lock-btn" data-lockbtn>Unlock</button>
+        <p class="page-lock-error" data-lockerror>That code isn't right. Try again.</p>
+      </div>
+    </div>
+
+    <div id="liveGated" style="display:none;">
     <div class="wrap faceoff">
       <div class="scoreboard-card reveal">
         <div class="scoreboard-clinched" id="scoreboardClinched" style="display:none;"></div>
@@ -1474,7 +1504,16 @@ button{font-family:inherit;cursor:pointer;}
       <h2 class="section-title" style="font-family:'Anton',sans-serif;font-size:clamp(28px,8vw,52px);text-transform:uppercase;letter-spacing:0.03em;">Today's Matchups</h2>
       <p style="color:var(--muted);font-size:14px;margin-bottom:28px;">August 29, 2026 · Davis Park &amp; Valley View</p>
 
-      <div id="matchupsGated"><div id="matchupsBody"></div></div>
+      <div class="page-lock-wrap" id="pageLockWrap-matchups">
+        <div class="page-lock-card">
+          <div class="page-lock-label">This page is locked while 2027 is being planned</div>
+          <input type="password" class="page-lock-input" placeholder="Enter access code" data-lockinput>
+          <button class="btn btn-gold page-lock-btn" data-lockbtn>Unlock</button>
+          <p class="page-lock-error" data-lockerror>That code isn't right. Try again.</p>
+        </div>
+      </div>
+
+      <div id="matchupsGated" style="display:none;"><div id="matchupsBody"></div></div>
     </div>
   </section>
 
@@ -1593,7 +1632,17 @@ button{font-family:inherit;cursor:pointer;}
     </div>
 
     <div class="wrap">
-      <div class="format-grid" id="formatGrid"></div>
+      <div class="page-lock-wrap" id="pageLockWrap-format">
+        <div class="page-lock-card">
+          <div class="page-lock-label">This page is locked while 2027 is being planned</div>
+          <input type="password" class="page-lock-input" placeholder="Enter access code" data-lockinput>
+          <button class="btn btn-gold page-lock-btn" data-lockbtn>Unlock</button>
+          <p class="page-lock-error" data-lockerror>That code isn't right. Try again.</p>
+        </div>
+      </div>
+      <div id="formatGated" style="display:none;">
+        <div class="format-grid" id="formatGrid"></div>
+      </div>
     </div>
 
   </section>
@@ -3650,6 +3699,7 @@ function refreshLiveData(){
   safe('renderTeams', renderTeams);
   safe('renderMatchups', renderMatchups);
   safe('renderRecordsPage', renderRecordsPage);
+  safe('applyPageLockState', applyPageLockState);
 }
 
 /* ========================= NAV ========================= */
@@ -3708,6 +3758,53 @@ if(authed){
   document.getElementById('loginCard').style.display = 'none';
   document.getElementById('adminPanel').style.display = 'block';
 }
+
+/* ========================= PAGE LOCK (Live / Matchups / Format) ========================= */
+/* One shared code unlocks all three pages at once — entering it on any one
+   of them unlocks the others too, and it persists across visits (same
+   pattern as the admin login above) so people don't have to re-enter it
+   every time they come back. Admin already has its own separate login and
+   isn't affected by this. */
+const PAGE_ACCESS_CODE = '0403';
+let pagesUnlocked = false;
+try { pagesUnlocked = localStorage.getItem('wcPagesUnlocked') === 'true'; } catch(e){}
+
+function applyPageLockState(){
+  ['live','matchups','format'].forEach(page=>{
+    const lockWrap = document.getElementById('pageLockWrap-'+page);
+    const gatedEl = page==='live' ? document.getElementById('liveGated')
+      : page==='matchups' ? document.getElementById('matchupsGated')
+      : document.getElementById('formatGated');
+    if(!lockWrap || !gatedEl) return;
+    lockWrap.style.display = pagesUnlocked ? 'none' : 'block';
+    gatedEl.style.display = pagesUnlocked ? '' : 'none';
+  });
+}
+function attemptPageUnlock(inputEl){
+  const val = inputEl.value;
+  const wrap = inputEl.closest('.page-lock-wrap');
+  const errorEl = wrap.querySelector('[data-lockerror]');
+  if(val === PAGE_ACCESS_CODE){
+    pagesUnlocked = true;
+    try { localStorage.setItem('wcPagesUnlocked', 'true'); } catch(e){}
+    errorEl.style.display = 'none';
+    applyPageLockState();
+    refreshLiveData();
+  } else {
+    errorEl.style.display = 'block';
+  }
+}
+document.querySelectorAll('[data-lockbtn]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const input = btn.closest('.page-lock-card').querySelector('[data-lockinput]');
+    attemptPageUnlock(input);
+  });
+});
+document.querySelectorAll('[data-lockinput]').forEach(input=>{
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') attemptPageUnlock(input); });
+});
+applyPageLockState();
+
 document.getElementById('publishBtn').addEventListener('click', async ()=>{
   // Grab current matchup data
   const snapshot = JSON.stringify(matchups);
@@ -4116,6 +4213,7 @@ async function initApp(){
   safe('renderMatchups', renderMatchups);
   safe('renderBattlefield', renderBattlefield);
   safe('renderRecordsPage', renderRecordsPage);
+  safe('applyPageLockState', applyPageLockState);
   safe('renderScoreboard', renderScoreboard);
   safe('updateCupProbStrip', updateCupProbStrip);
   safe('renderLiveScoring', renderLiveScoring);
