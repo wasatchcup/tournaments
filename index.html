@@ -944,26 +944,18 @@ button{font-family:inherit;cursor:pointer;}
   border-bottom:1px solid var(--hairline-soft);
 }
 .bio-block{padding:50px 0;}
-.bio-block.landon{border-bottom:1px solid var(--hairline-soft);}
 .bios-grid{display:flex;flex-direction:column;gap:14px;}
 .bio-card{
   display:flex;gap:18px;align-items:flex-start;
   background:var(--ink-1);border:1px solid var(--hairline);border-radius:var(--radius);
   padding:18px 20px;transition:border-color .25s;
 }
-.bio-block.landon .bio-card.captain{border-color:rgba(143,168,137,0.5);}
-.bio-block.josh .bio-card.captain{border-color:rgba(168,149,124,0.5);}
 .bio-card img{width:68px;height:68px;border-radius:10px;object-fit:cover;flex-shrink:0;}
 .bio-card-body{flex:1;min-width:0;}
 .bio-card-top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
 .bio-card-name{font-size:15px;font-weight:700;color:var(--parchment);}
 .bio-card-tag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;}
-.bio-card-tag.l{color:var(--landon);}
-.bio-card-tag.j{color:var(--josh);}
-.bio-card-captain{
-  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);
-  border:1px solid var(--gold);border-radius:20px;padding:2px 8px;
-}
+.bio-card-tag.commissioner{color:var(--gold);font-weight:700;}
 .bio-card-text{font-size:13.5px;color:var(--parchment-dim);margin-top:10px;line-height:1.65;}
 .bio-line{margin-bottom:5px;padding-left:0;position:relative;}
 .bio-line:last-of-type{margin-bottom:0;}
@@ -1582,18 +1574,8 @@ button{font-family:inherit;cursor:pointer;}
       </div>
     </div>
 
-    <div class="wrap bio-block landon">
-      <div class="team-block-head reveal">
-        <h2 class="team-name-tag">Team Landon</h2>
-      </div>
-      <div class="bios-grid" id="landonBios"></div>
-    </div>
-
-    <div class="wrap bio-block josh">
-      <div class="team-block-head reveal">
-        <h2 class="team-name-tag">Team Josh</h2>
-      </div>
-      <div class="bios-grid" id="joshBios"></div>
+    <div class="wrap bio-block">
+      <div class="bios-grid" id="allBios"></div>
     </div>
 
   </section>
@@ -2405,40 +2387,34 @@ function formatBioText(bio){
   const footHtml = footnote ? `<div class="bio-footnote">${footnote}</div>` : '';
   return linesHtml + footHtml;
 }
-function renderBioCard(teamKey, id){
-  const team = TEAMS_2026[teamKey];
+function renderBioCard(id){
   const p = PLAYERS[id];
-  const isCap = id===team.captain;
-  const tagClass = p.team==='landon' ? 'l' : 'j';
+  const isCommissioner = id==='mitchell-meyer';
   const bioBody = (p.bio && p.bio.trim())
     ? `<div class="bio-card-text">${formatBioText(p.bio)}</div>`
     : `<div class="bio-placeholder">Bio coming soon &mdash; reserved for ${escapeHtml(p.name)} to fill in.</div>`;
   return `
-  <div class="bio-card ${isCap?'captain':''}">
+  <div class="bio-card ${p.team}">
     <img src="${p.photo}" alt="${escapeHtml(p.name)}">
     <div class="bio-card-body">
       <div class="bio-card-top">
         <div class="bio-card-name">${escapeHtml(p.name)}</div>
-        <div class="bio-card-tag ${tagClass}">${p.team==='landon'?'Team Landon':'Team Josh'}</div>
-        ${isCap?'<div class="bio-card-captain">Captain</div>':''}
+        ${isCommissioner ? '<div class="bio-card-tag commissioner">Commissioner</div>' : ''}
       </div>
       ${bioBody}
     </div>
   </div>`;
 }
+/* Explicit Cup-experience order, set by hand rather than computed —
+   Mitchell Meyer (Commissioner) leads, then the rest ranked by experience. */
+const BIOS_ORDER = [
+  'mitchell-meyer','landon-anderson','josh-pehrson','cooper-atkinson',
+  'zac-cottrell','tom-rhodes','ryan-hubrich','jack-sargent',
+  'dillon-griffin','ian-cahoon','palmer-brophy','jesse-henderson',
+  'ben-dunford','cam-howe','brendan-thomas','grant-wilson',
+];
 function renderBios(){
-  // Most experienced (most total matches played, career + 2026) shown first
-  const cupStats = computeCup2026Stats();
-  function byExperience(a, b){
-    const statsA = getPlayerStats(a, cupStats), statsB = getPlayerStats(b, cupStats);
-    const playedA = statsA.wins + statsA.losses + statsA.draws;
-    const playedB = statsB.wins + statsB.losses + statsB.draws;
-    return playedB - playedA;
-  }
-  const landonSorted = TEAMS_2026.landon.roster.slice().sort(byExperience);
-  const joshSorted = TEAMS_2026.josh.roster.slice().sort(byExperience);
-  document.getElementById('landonBios').innerHTML = landonSorted.map(id=>renderBioCard('landon', id)).join('');
-  document.getElementById('joshBios').innerHTML = joshSorted.map(id=>renderBioCard('josh', id)).join('');
+  document.getElementById('allBios').innerHTML = BIOS_ORDER.map(id=>renderBioCard(id)).join('');
 }
 
 /* ========================= RENDER: FORMATS ========================= */
