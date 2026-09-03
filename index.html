@@ -875,6 +875,17 @@ button{font-family:inherit;cursor:pointer;}
 .champ-roster img:first-child{margin-left:0;}
 .champ-photo-row{grid-column:1/-1;margin-top:6px;}
 .champ-extras{grid-column:1/-1;margin-top:18px;padding-top:18px;border-top:1px solid var(--hairline);}
+.champ-dropdown-toggle{
+  grid-column:1/-1;margin-top:14px;width:100%;text-align:left;
+  background:var(--ink-2);border:1px solid var(--hairline-soft);border-radius:10px;
+  padding:12px 16px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;
+  letter-spacing:0.04em;text-transform:uppercase;color:var(--gold);cursor:pointer;
+}
+.champ-dropdown-toggle.open{border-radius:10px 10px 0 0;}
+.champ-dropdown{
+  grid-column:1/-1;background:var(--ink-2);border:1px solid var(--hairline-soft);border-top:none;
+  border-radius:0 0 10px 10px;padding:18px 16px;
+}
 .champ-extra-sub{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:12px;}
 .champ-photo-toggle{
   background:var(--ink-2);border:1px solid var(--hairline-soft);border-radius:var(--radius-sm);
@@ -1896,6 +1907,37 @@ const ARCHIVE_2026_MATCHES = [
     holeScores:{landon:[3,6,4,4,5,5,3,5,4], josh:[4,5,3,4,4,4,4,3,4]}},
 ];
 
+/* 2025 archive — unlike 2026, no hole-by-hole scores exist for this season,
+   only match-level results (winner + margin), so this is stored and
+   computed differently: teamA is always Team Moo Toads, teamB is always
+   Chubbs Revenge, and `result` is 'A', 'B', or 'tie' directly rather than
+   being derived from holeScores. Verified against every checkpoint total
+   given (2-1 after Scramble, 2.5-3.5 after Alt Shot, 4.5-4.5 after Best
+   Ball, 8-7 final) before being locked in here. */
+const ROUNDS_2025 = [
+  {id:'scramble', label:'Scramble'},
+  {id:'altshot', label:'Alt Shot'},
+  {id:'bestball', label:'Best Ball'},
+  {id:'matchplay', label:'Match Play'},
+];
+const ARCHIVE_2025_MATCHES = [
+  {round:'scramble', teamA:['mitchell-meyer','cooper-atkinson'], teamB:['ian-cahoon','tom-rhodes'], result:'tie', margin:'Halved'},
+  {round:'scramble', teamA:['jesse-henderson','zac-cottrell'], teamB:['landon-anderson','ryan-hubrich'], result:'B', margin:'2 UP'},
+  {round:'scramble', teamA:['josh-pehrson','palmer-brophy'], teamB:['jack-sargent','dillon-griffin'], result:'tie', margin:'Halved'},
+  {round:'altshot', teamA:['mitchell-meyer','cooper-atkinson'], teamB:['tom-rhodes','ian-cahoon'], result:'A', margin:'3&2'},
+  {round:'altshot', teamA:['zac-cottrell','jesse-henderson'], teamB:['ryan-hubrich','landon-anderson'], result:'B', margin:'3&1'},
+  {round:'altshot', teamA:['palmer-brophy','josh-pehrson'], teamB:['dillon-griffin','jack-sargent'], result:'tie', margin:'Halved'},
+  {round:'bestball', teamA:['mitchell-meyer','josh-pehrson'], teamB:['dillon-griffin','landon-anderson'], result:'B', margin:'1 UP'},
+  {round:'bestball', teamA:['jesse-henderson','palmer-brophy'], teamB:['tom-rhodes','jack-sargent'], result:'A', margin:'2&1'},
+  {round:'bestball', teamA:['zac-cottrell','cooper-atkinson'], teamB:['ryan-hubrich','ian-cahoon'], result:'A', margin:'2&1'},
+  {round:'matchplay', teamA:['josh-pehrson'], teamB:['landon-anderson'], result:'A', margin:'4&3'},
+  {round:'matchplay', teamA:['mitchell-meyer'], teamB:['dillon-griffin'], result:'A', margin:'3&2'},
+  {round:'matchplay', teamA:['palmer-brophy'], teamB:['tom-rhodes'], result:'A', margin:'3&2'},
+  {round:'matchplay', teamA:['jesse-henderson'], teamB:['jack-sargent'], result:'B', margin:'2 UP'},
+  {round:'matchplay', teamA:['zac-cottrell'], teamB:['ian-cahoon'], result:'B', margin:'1 UP'},
+  {round:'matchplay', teamA:['cooper-atkinson'], teamB:['ryan-hubrich'], result:'tie', margin:'Halved'},
+];
+
 const ROUNDS = [
   {id:'r1', course:'Davis Park Golf Course', format:'Chapman',    nine:'Front 9',
     holes:[{num:1,par:4,hcp:14},{num:2,par:3,hcp:10},{num:3,par:5,hcp:16},{num:4,par:4,hcp:6},
@@ -2269,6 +2311,54 @@ function buildCurrentChampionExtrasHtml(year){
   return `<div class="champ-extras">${leaderboardHtml}${breakdownHtml}</div>`;
 }
 
+/* 2025's version of the same idea, but built from match-level results
+   (ARCHIVE_2025_MATCHES) rather than hole-by-hole scores, since that detail
+   was never captured for this season — only who won each match and by
+   what margin. Team Moo Toads is always `teamA`, Chubbs Revenge `teamB`. */
+function build2025ExtrasHtml(){
+  const stats = {};
+  ARCHIVE_2025_MATCHES.forEach(m=>{
+    const aRes = m.result==='tie' ? 'd' : m.result==='A' ? 'w' : 'l';
+    const bRes = m.result==='tie' ? 'd' : m.result==='B' ? 'w' : 'l';
+    m.teamA.forEach(id=>{ stats[id] = stats[id] || {w:0,l:0,d:0}; stats[id][aRes]++; });
+    m.teamB.forEach(id=>{ stats[id] = stats[id] || {w:0,l:0,d:0}; stats[id][bRes]++; });
+  });
+  const rows = Object.keys(stats).map(id=>{
+    const s = stats[id];
+    const pf = s.w + s.d*0.5, pa = s.l + s.d*0.5;
+    return {id, name:PLAYERS[id].name, photo:PLAYERS[id].photo, w:s.w, l:s.l, d:s.d, pf, pm:pf-pa};
+  });
+  rows.sort((a,b)=> b.pm - a.pm || b.w - a.w);
+  const leaderboardHtml = `
+    <div class="champ-extra-sub">2025 player leaderboard</div>
+    <div class="p-row head"><div>#</div><div></div><div>Golfer</div><div style="text-align:center">Record</div><div style="text-align:center">PF</div><div style="text-align:center">+/-</div></div>
+    ${rows.map((r,i)=>{
+      const pmCls = r.pm > 0 ? 'pos' : r.pm < 0 ? 'neg' : 'zero';
+      const pmText = r.pm > 0 ? '+'+r.pm : r.pm;
+      return `<div class="p-row"><div class="p-rank">${i+1}</div><img class="p-photo" src="${r.photo}"><div class="p-name">${escapeHtml(r.name)}</div><div class="p-wld">${r.w}-${r.l}-${r.d}</div><div class="p-team">${r.pf}</div><div class="p-pm ${pmCls}">${pmText}</div></div>`;
+    }).join('')}`;
+
+  let runA = 0, runB = 0;
+  const roundRows = ROUNDS_2025.map(round=>{
+    let a = 0, b = 0;
+    ARCHIVE_2025_MATCHES.filter(m => m.round === round.id).forEach(m=>{
+      if(m.result==='tie'){ a += 0.5; b += 0.5; }
+      else if(m.result==='A'){ a += 1; } else { b += 1; }
+    });
+    runA += a; runB += b;
+    return `<div class="rb-row"><div class="rb-round">${escapeHtml(round.label)}</div><div class="rb-num landon">${a}</div><div class="rb-num josh">${b}</div></div>`;
+  }).join('');
+  const bannerHtml = `<div class="champion-strip">&#127942; Team Moo Toads wins the 2025 Wasatch Cup, ${runA} \u2013 ${runB}</div>`;
+  const breakdownHtml = `
+    <div class="champ-extra-sub" style="margin-top:24px;">How the Cup was decided, round by round</div>
+    <div class="rb-row head"><div>Round</div><div class="rb-num">Moo Toads</div><div class="rb-num">Chubbs</div></div>
+    ${roundRows}
+    <div class="rb-row rb-final"><div class="rb-round">Final</div><div class="rb-num landon">${runA}</div><div class="rb-num josh">${runB}</div></div>
+    ${bannerHtml}`;
+
+  return `<div class="champ-extras">${leaderboardHtml}${breakdownHtml}</div>`;
+}
+
 function renderChampions(targetId){
   targetId = targetId || 'championsStrip';
   const ordered = CHAMPIONS.slice().reverse();
@@ -2276,6 +2366,15 @@ function renderChampions(targetId){
     const isCurrent = i===0;
     const faces = c.roster.map(id=>`<img src="${PLAYERS[id].photo}" alt="${escapeHtml(PLAYERS[id].name)}">`).join('');
     const others = c.roster.filter(id=>id!==c.captain).map(id=>PLAYERS[id].name).join(', ');
+    let extrasBlock = '';
+    if(isCurrent){
+      extrasBlock = buildCurrentChampionExtrasHtml(c.year);
+    } else if(c.year === 2025){
+      const dropdownId = 'champDropdown-'+c.year;
+      extrasBlock = `
+      <button class="champ-dropdown-toggle" data-champtoggle="${dropdownId}">See how the ${c.year} Cup was decided &#9662;</button>
+      <div class="champ-dropdown" id="${dropdownId}" style="display:none;">${build2025ExtrasHtml()}</div>`;
+    }
     return `
     <div class="champ-card ${isCurrent?'current':''} reveal">
       <div class="champ-year">${c.year}<span>WASATCH CUP</span></div>
@@ -2285,10 +2384,18 @@ function renderChampions(targetId){
         ${others ? `<div class="champ-roster-names">${escapeHtml(others)}</div>` : ''}
       </div>
       <div class="champ-roster">${faces}</div>
-      ${isCurrent ? buildCurrentChampionExtrasHtml(c.year) : ''}
+      ${extrasBlock}
     </div>`;
   }).join('');
   document.getElementById(targetId).innerHTML = html;
+  document.querySelectorAll('.champ-dropdown-toggle').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const target = document.getElementById(btn.dataset.champtoggle);
+      const isOpen = target.style.display !== 'none';
+      target.style.display = isOpen ? 'none' : 'block';
+      btn.classList.toggle('open', !isOpen);
+    });
+  });
 }
 
 /* ========================= RENDER: RECORDS PAGE ========================= */
