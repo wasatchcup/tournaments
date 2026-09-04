@@ -185,8 +185,9 @@ button{font-family:inherit;cursor:pointer;}
 }
 .ncb-date{font-family:'Anton',sans-serif;font-size:15px;text-transform:uppercase;color:var(--parchment);}
 .ncb-countdown{
-  font-family:'Anton',sans-serif;font-size:clamp(40px,11vw,68px);color:var(--gold);
+  font-family:'Anton',sans-serif;font-size:clamp(26px,7.5vw,42px);color:var(--gold);
   letter-spacing:0.01em;line-height:1;margin-top:8px;font-variant-numeric:tabular-nums;
+  white-space:nowrap;
 }
 .ncb-message{
   font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--parchment-dim);
@@ -1542,16 +1543,16 @@ button{font-family:inherit;cursor:pointer;}
       </svg>
       <div class="wrap">
         <div class="eyebrow">HISTORY</div>
-        <h1 class="section-title display">Players, Head-to-Head &amp; Champions</h1>
-        <p class="hero-sub" style="margin:14px 0 0;text-align:left;max-width:640px;">Career standings, real 2026 head-to-head scorecards, and the Champions timeline — including how this year's Cup actually came together.</p>
+        <h1 class="section-title display">The Record Book</h1>
+        <p class="hero-sub" style="margin:14px 0 0;text-align:left;max-width:640px;">The purest measure of who shows up when the Cup is on the line &mdash; career standings, real head-to-head history, and the Champions timeline.</p>
       </div>
     </div>
 
     <div class="wrap section">
       <div class="rec-toggle-row">
         <button class="rec-toggle-btn active" data-recview="players">Players History</button>
-        <button class="rec-toggle-btn" data-recview="h2h">H2H 2026</button>
         <button class="rec-toggle-btn" data-recview="team">Team History</button>
+        <button class="rec-toggle-btn" data-recview="h2h">H2H 2026</button>
       </div>
 
       <div class="rec-view active" id="recview-players">
