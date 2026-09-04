@@ -1512,9 +1512,8 @@ button{font-family:inherit;cursor:pointer;}
   <!-- ===================== HISTORY ===================== -->
   <section class="page" id="matchups" data-page="matchups">
     <div class="wrap section">
-      <div class="eyebrow">2026 Wasatch Cup</div>
-      <h2 class="section-title" style="font-family:'Anton',sans-serif;font-size:clamp(28px,8vw,52px);text-transform:uppercase;letter-spacing:0.03em;">Today's Matchups</h2>
-      <p style="color:var(--muted);font-size:14px;margin-bottom:28px;">August 29, 2026 · Davis Park &amp; Valley View</p>
+      <div class="eyebrow">2027 Wasatch Cup</div>
+      <h2 class="section-title" style="font-family:'Anton',sans-serif;font-size:clamp(28px,8vw,52px);text-transform:uppercase;letter-spacing:0.03em;">Matchups</h2>
 
       <div class="page-lock-wrap" id="pageLockWrap-matchups">
         <div class="page-lock-card">
@@ -1663,6 +1662,16 @@ button{font-family:inherit;cursor:pointer;}
   <!-- ===================== ADMIN ===================== -->
   <section class="page" id="admin" data-page="admin">
 
+    <div class="wrap page-lock-wrap" id="pageLockWrap-admin">
+      <div class="page-lock-card">
+        <div class="page-lock-label">This page is locked while 2027 is being planned</div>
+        <input type="password" class="page-lock-input" placeholder="Enter access code" data-lockinput>
+        <button class="btn btn-gold page-lock-btn" data-lockbtn>Unlock</button>
+        <p class="page-lock-error" data-lockerror>That code isn't right. Try again.</p>
+      </div>
+    </div>
+
+    <div id="adminGated" style="display:none;">
     <div class="admin-hero">
       <div class="wrap">
         <div class="eyebrow">SCOREKEEPER ACCESS</div>
@@ -1701,6 +1710,7 @@ button{font-family:inherit;cursor:pointer;}
         <button class="btn btn-gold" id="publishBtn">⬇ Publish &amp; Share</button>
         <button class="btn btn-danger" id="resetBtn">Clear All Scores &middot; Prep for Next Year</button>
       </div>
+    </div>
     </div>
 
   </section>
@@ -1875,13 +1885,21 @@ const ARCHIVE_2026_MATCHES = [
   {round:'r1', landon:['tom-rhodes','jesse-henderson'], josh:['ryan-hubrich','brendan-thomas'],
     holeScores:{landon:[4,3,4,4,4,4,2,5,4], josh:[4,3,4,4,3,4,3,5,3]}},
   {round:'r2', landon:['ian-cahoon','dillon-griffin'], josh:['zac-cottrell','grant-wilson'],
-    holeScores:{landon:[5,3,3,5,4,4,4,4,3], josh:[4,4,3,5,3,4,3,4,3]}},
+    holeScores:{landon:[5,3,3,5,4,4,4,4,3], josh:[4,4,3,5,3,4,3,4,3],
+      landonPlayers:[[5,3,3,5,4,4,4,4,3],[5,3,3,5,4,4,4,4,3]],
+      joshPlayers:[[4,4,3,5,3,4,3,4,3],[4,4,3,5,3,4,3,4,3]]}},
   {round:'r2', landon:['landon-anderson','mitchell-meyer'], josh:['josh-pehrson','ben-dunford'],
-    holeScores:{landon:[5,3,3,5,3,4,3,4,4], josh:[4,3,3,5,3,3,3,4,4]}},
+    holeScores:{landon:[5,3,3,5,3,4,3,4,4], josh:[4,3,3,5,3,3,3,4,4],
+      landonPlayers:[[5,4,4,6,3,4,3,4,4],[5,3,3,5,4,4,3,4,4]],
+      joshPlayers:[[4,3,4,5,3,3,3,4,4],[7,3,3,6,4,3,3,4,4]]}},
   {round:'r2', landon:['cooper-atkinson','tom-rhodes'], josh:['ryan-hubrich','palmer-brophy'],
-    holeScores:{landon:[4,3,5,6,3,4,2,4,3], josh:[5,3,4,5,4,4,3,4,3]}},
+    holeScores:{landon:[4,3,5,6,3,4,2,4,3], josh:[5,3,4,5,4,4,3,4,3],
+      landonPlayers:[[4,3,5,6,3,4,2,5,3],[5,4,5,6,5,4,4,4,4]],
+      joshPlayers:[[5,3,5,5,4,4,4,4,3],[5,4,4,5,4,4,3,4,3]]}},
   {round:'r2', landon:['jesse-henderson','cam-howe'], josh:['jack-sargent','brendan-thomas'],
-    holeScores:{landon:[4,4,5,6,4,3,null,null,null], josh:[4,3,4,5,3,3,null,null,null]}},
+    holeScores:{landon:[4,4,5,6,4,3,null,null,null], josh:[4,3,4,5,3,3,null,null,null],
+      landonPlayers:[[4,4,5,6,4,3,null,null,null],[4,4,5,6,4,5,null,null,null]],
+      joshPlayers:[[4,3,4,5,3,3,null,null,null],[4,3,4,5,3,4,null,null,null]]}},
   {round:'r3', landon:['landon-anderson','cam-howe'], josh:['josh-pehrson','brendan-thomas'],
     holeScores:{landon:[3,4,4,3,3,3,2,3,3], josh:[3,4,4,2,4,4,2,3,4]}},
   {round:'r3', landon:['cooper-atkinson','mitchell-meyer'], josh:['ryan-hubrich','ben-dunford'],
@@ -2407,8 +2425,11 @@ function renderChampions(targetId){
     const faces = c.roster.map(id=>`<img src="${PLAYERS[id].photo}" alt="${escapeHtml(PLAYERS[id].name)}">`).join('');
     const others = c.roster.filter(id=>id!==c.captain).map(id=>PLAYERS[id].name).join(', ');
     let extrasBlock = '';
-    if(isCurrent){
-      extrasBlock = buildCurrentChampionExtrasHtml(c.year);
+    if(c.year === 2026){
+      const dropdownId = 'champDropdown-'+c.year;
+      extrasBlock = `
+      <button class="champ-dropdown-toggle" data-champtoggle="${dropdownId}">See how the ${c.year} Cup was decided &#9662;</button>
+      <div class="champ-dropdown" id="${dropdownId}" style="display:none;">${buildCurrentChampionExtrasHtml(c.year)}</div>`;
     } else if(c.year === 2025){
       const dropdownId = 'champDropdown-'+c.year;
       extrasBlock = `
@@ -3922,11 +3943,12 @@ let pagesUnlocked = false;
 try { pagesUnlocked = localStorage.getItem('wcPagesUnlocked') === 'true'; } catch(e){}
 
 function applyPageLockState(){
-  ['live','matchups','format'].forEach(page=>{
+  ['live','matchups','format','admin'].forEach(page=>{
     const lockWrap = document.getElementById('pageLockWrap-'+page);
     const gatedEl = page==='live' ? document.getElementById('liveGated')
       : page==='matchups' ? document.getElementById('matchupsGated')
-      : document.getElementById('formatGated');
+      : page==='format' ? document.getElementById('formatGated')
+      : document.getElementById('adminGated');
     if(!lockWrap || !gatedEl) return;
     lockWrap.style.display = pagesUnlocked ? 'none' : 'block';
     gatedEl.style.display = pagesUnlocked ? '' : 'none';
