@@ -2306,16 +2306,22 @@ function buildCurrentChampionExtrasHtml(year){
   const rows = Object.keys(PLAYERS).map(id=>{
     const c = cupStats[id] || {wins:0,losses:0,draws:0};
     const pf = c.wins + c.draws*0.5, pa = c.losses + c.draws*0.5;
-    return {id, name:PLAYERS[id].name, photo:PLAYERS[id].photo, w:c.wins, l:c.losses, d:c.draws, pf, pm:pf-pa};
+    const overallDiff = getPlayerStats(id, cupStats).diff;
+    return {id, name:PLAYERS[id].name, photo:PLAYERS[id].photo, w:c.wins, l:c.losses, d:c.draws, pf, pm:pf-pa, overallDiff};
   }).filter(r => r.w+r.l+r.d > 0);
-  rows.sort((a,b)=> b.pm - a.pm || b.w - a.w);
+  // Tiebreak ties in this year's +/- using career-long +/- — e.g. Jesse
+  // Henderson and Dillon Griffin both go 0-3-1 in 2026, but Dillon's overall
+  // record (1-4-3) is better than Jesse's (1-6-1), so Dillon ranks above.
+  rows.sort((a,b)=> b.pm - a.pm || b.overallDiff - a.overallDiff || b.w - a.w);
+  const captainIds2026 = ['landon-anderson','josh-pehrson'];
   const leaderboardHtml = rows.length ? `
     <div class="champ-extra-sub">2026 player leaderboard</div>
     <div class="p-row head"><div>#</div><div></div><div>Golfer</div><div style="text-align:center">Record</div><div style="text-align:center">PF</div><div style="text-align:center">+/-</div></div>
     ${rows.map((r,i)=>{
       const pmCls = r.pm > 0 ? 'pos' : r.pm < 0 ? 'neg' : 'zero';
       const pmText = r.pm > 0 ? '+'+r.pm : r.pm;
-      return `<div class="p-row"><div class="p-rank">${i+1}</div><img class="p-photo" src="${r.photo}"><div class="p-name">${escapeHtml(r.name)}</div><div class="p-wld">${r.w}-${r.l}-${r.d}</div><div class="p-team">${r.pf}</div><div class="p-pm ${pmCls}">${pmText}</div></div>`;
+      const nameDisplay = escapeHtml(r.name) + (captainIds2026.includes(r.id) ? ' (C)' : '');
+      return `<div class="p-row"><div class="p-rank">${i+1}</div><img class="p-photo" src="${r.photo}"><div class="p-name">${nameDisplay}</div><div class="p-wld">${r.w}-${r.l}-${r.d}</div><div class="p-team">${r.pf}</div><div class="p-pm ${pmCls}">${pmText}</div></div>`;
     }).join('')}` : '';
 
   let runL = 0, runJ = 0, anyFinal = false;
@@ -2364,13 +2370,15 @@ function build2025ExtrasHtml(){
     return {id, name:PLAYERS[id].name, photo:PLAYERS[id].photo, w:s.w, l:s.l, d:s.d, pf, pm:pf-pa};
   });
   rows.sort((a,b)=> b.pm - a.pm || b.w - a.w);
+  const captainIds2025 = ['mitchell-meyer','tom-rhodes'];
   const leaderboardHtml = `
     <div class="champ-extra-sub">2025 player leaderboard</div>
     <div class="p-row head"><div>#</div><div></div><div>Golfer</div><div style="text-align:center">Record</div><div style="text-align:center">PF</div><div style="text-align:center">+/-</div></div>
     ${rows.map((r,i)=>{
       const pmCls = r.pm > 0 ? 'pos' : r.pm < 0 ? 'neg' : 'zero';
       const pmText = r.pm > 0 ? '+'+r.pm : r.pm;
-      return `<div class="p-row"><div class="p-rank">${i+1}</div><img class="p-photo" src="${r.photo}"><div class="p-name">${escapeHtml(r.name)}</div><div class="p-wld">${r.w}-${r.l}-${r.d}</div><div class="p-team">${r.pf}</div><div class="p-pm ${pmCls}">${pmText}</div></div>`;
+      const nameDisplay = escapeHtml(r.name) + (captainIds2025.includes(r.id) ? ' (C)' : '');
+      return `<div class="p-row"><div class="p-rank">${i+1}</div><img class="p-photo" src="${r.photo}"><div class="p-name">${nameDisplay}</div><div class="p-wld">${r.w}-${r.l}-${r.d}</div><div class="p-team">${r.pf}</div><div class="p-pm ${pmCls}">${pmText}</div></div>`;
     }).join('')}`;
 
   let runA = 0, runB = 0;
@@ -2406,13 +2414,15 @@ function build2024ExtrasHtml(){
     return {id, name:PLAYERS[id].name, photo:PLAYERS[id].photo, w:s.w, l:s.l, d:s.d, pf, pm:pf-pa};
   });
   rows.sort((a,b)=> b.pm - a.pm || b.w - a.w);
+  const captainIds2024 = ['mitchell-meyer','tom-rhodes'];
   const leaderboardHtml = `
     <div class="champ-extra-sub">2024 player leaderboard</div>
     <div class="p-row head"><div>#</div><div></div><div>Golfer</div><div style="text-align:center">Record</div><div style="text-align:center">PF</div><div style="text-align:center">+/-</div></div>
     ${rows.map((r,i)=>{
       const pmCls = r.pm > 0 ? 'pos' : r.pm < 0 ? 'neg' : 'zero';
       const pmText = r.pm > 0 ? '+'+r.pm : r.pm;
-      return `<div class="p-row"><div class="p-rank">${i+1}</div><img class="p-photo" src="${r.photo}"><div class="p-name">${escapeHtml(r.name)}</div><div class="p-wld">${r.w}-${r.l}-${r.d}</div><div class="p-team">${r.pf}</div><div class="p-pm ${pmCls}">${pmText}</div></div>`;
+      const nameDisplay = escapeHtml(r.name) + (captainIds2024.includes(r.id) ? ' (C)' : '');
+      return `<div class="p-row"><div class="p-rank">${i+1}</div><img class="p-photo" src="${r.photo}"><div class="p-name">${nameDisplay}</div><div class="p-wld">${r.w}-${r.l}-${r.d}</div><div class="p-team">${r.pf}</div><div class="p-pm ${pmCls}">${pmText}</div></div>`;
     }).join('')}`;
   return `<div class="champ-extras">${leaderboardHtml}</div>`;
 }
